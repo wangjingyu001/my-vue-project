@@ -1,0 +1,20 @@
+.highlight_added {
+  background-color: rgb(144, 238, 144) !important;
+  transition: background-color 0.3s ease;
+  pointer-events: none; /* 防止干扰交互 */
+  display: block; /* 确保不破坏布局 */
+}
+
+.highlight_changed {
+  background-color: rgb(255, 165, 0) !important;
+  transition: background-color 0.3s ease;
+  pointer-events: none; /* 防止干扰交互 */
+  display: block; /* 确保不破坏布局 */
+}
+
+.highlight_removed {
+  background-color: rgb(173, 216, 230) !important;
+  transition: background-color 0.3s ease;
+  pointer-events: none; /* 防止干扰交互 */
+  display: block; /* 确保不破坏布局 */
+}

@@ -1,0 +1,23 @@
+{
+  "name": "my-vue-project",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "axios": "^1.7.8",
+    "codemirror": "^5.65.18",
+    "curlconverter": "^4.11.0",
+    "element-plus": "^2.8.8",
+    "vite-plugin-top-level-await": "^1.4.4",
+    "vue": "^3.5.13"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^5.2.1",
+    "vite": "^6.0.1"
+  }
+}
