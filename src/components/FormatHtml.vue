@@ -44,7 +44,7 @@ import "codemirror/addon/fold/brace-fold";
 import "codemirror/addon/fold/xml-fold";  // 添加这个
 import "codemirror/addon/fold/foldgutter.css";
 // import * as prettier from "prettier/standalone"
-// import * as parserBabel from 'prettier/parser-babel';
+//    import * as parserBabel from 'prettier/parser-babel';
 // import * as prettierPluginEstree from "prettier/plugins/estree";
 // import parserJSON from 'prettier/parser-babel'
 import beautify from "js-beautify";
@@ -56,7 +56,7 @@ export default {
             jsonLeft: "", // 左侧 JSON 输入
             jsonRight: "", // 右侧 JSON 输入
             compareResult: null, // 比对结果
-            responseData : "",
+            responseData: "",
         };
     },
     watch: {
@@ -67,7 +67,7 @@ export default {
         },
     },
     mounted() {
-        this.format  = window.prettier
+        this.format = window.prettier
         this.babelParser = window.prettierPlugins.babel
         // 初始化 CodeMirror
         this.jsonEditor2 = CodeMirror.fromTextArea(this.$refs.jsonEditor2, {
@@ -89,17 +89,17 @@ export default {
             try {
                 // 发起请求，替换为你的接口地址
                 // const format_str = this.format_str;
-            //     const response = await prettier.format(format_str,  { parser: "babel", 
-            //     plugins: [parserBabel, prettierPluginEstree] ,
-            //     printWidth: 1000 ,
-            //     tabWidth: 4 
-            // });
-                    const response = beautify.html(format_str, {
-                        indent_size: 4,//缩进两个空格
-                        space_in_empty_paren: true,
-                        indent_inner_html: true
-                    });
-                    this.jsonEditor2.setValue(response);
+                //     const response = await prettier.format(format_str,  { parser: "babel", 
+                //     plugins: [parserBabel, prettierPluginEstree] ,
+                //     printWidth: 1000 ,
+                //     tabWidth: 4 
+                // });
+                const response = beautify.html(format_str, {
+                    indent_size: 4,//缩进两个空格
+                    space_in_empty_paren: true,
+                    indent_inner_html: true
+                });
+                this.jsonEditor2.setValue(response);
                 // if (response.data.status===200){
                 //     this.jsonEditor2.setValue(JSON.stringify(response.data.result, null, 4));
                 //     console.log("完成格式化")
@@ -107,9 +107,9 @@ export default {
                 //     this.jsonEditor2.setValue("请求失败，请检查控制台日志或输入的cookies。");
                 //     console.log("完成格式化")
                 // }
-                
+
             } catch (error) {
-                
+
                 console.error("请求失败:", error);
                 this.jsonEditor2.setValue("请求失败，请检查控制台日志或输入的cookies。");
             }

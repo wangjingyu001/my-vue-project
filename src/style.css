@@ -18,3 +18,25 @@
   pointer-events: none; /* 防止干扰交互 */
   display: block; /* 确保不破坏布局 */
 }
+
+
+/* 备案 样式代码 */
+.footer {
+  text-align: center;
+  padding: 10px;
+  background-color: #f8f9fa;
+  position: fixed;
+  width: 100%;
+  bottom: 0;
+  font-size: 12px; /* 调整字体大小 */
+  color: #6c757d; /* 调整字体颜色 */
+}
+
+.beian-link, .friend-link {
+  color: #6c757d;
+  text-decoration: none;
+}
+
+.beian-link:hover, .friend-link:hover {
+  text-decoration: underline;
+}
