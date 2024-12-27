@@ -1,72 +1,75 @@
 <template>
-    <el-container style="height: 100vh;">
-        <!-- 侧边栏 -->
-        <el-aside class="menu-aside">
-            <div class="logo">
-                <img src="../assets/logo.png" alt="Logo" class="logo-img" />
-                <span class="logo-text">爬虫工具库</span>
-            </div>
-            <el-menu default-active="1" class="el-menu-vertical" @select="handleMenuClick">
-                <el-menu-item class="menu-item" index="1">object转dict(格式化)</el-menu-item>
-                <el-menu-item class="menu-item" index="2">JSON对比</el-menu-item>
-                <el-menu-item class="menu-item" index="3">cURL转requests</el-menu-item>
-                <el-menu-item class="menu-item" index="4" disabled>Cookie格式化</el-menu-item>
-                <el-menu-item class="menu-item" index="5" disabled>Headers格式化</el-menu-item>
-                <el-menu-item class="menu-item" index="6">URL参数提取</el-menu-item>
-                <el-menu-item class="menu-item" index="7">JS格式化</el-menu-item>
-                <el-menu-item class="menu-item" index="8">HTML格式化</el-menu-item>
-                <el-menu-item class="menu-item" index="9">URL编码/解码</el-menu-item>
-                <el-menu-item class="menu-item" index="10">unicode编码/解码</el-menu-item>
-            </el-menu>
-        </el-aside>
+    <div class="common-layout">
+        <el-container>
+            <!-- 侧边栏 -->
+            <el-aside class="menu-aside">
+                <div class="logo">
+                    <img src="../assets/logo.png" alt="Logo" class="logo-img" />
+                    <span class="logo-text">爬虫工具库</span>
+                </div>
+                <el-menu default-active="1" class="el-menu-vertical" @select="handleMenuClick">
+                    <el-menu-item class="menu-item" index="1">object转dict(格式化)</el-menu-item>
+                    <el-menu-item class="menu-item" index="2">JSON对比</el-menu-item>
+                    <el-menu-item class="menu-item" index="3">cURL转requests</el-menu-item>
+                    <el-menu-item class="menu-item" index="4" disabled>Cookie格式化</el-menu-item>
+                    <el-menu-item class="menu-item" index="5" disabled>Headers格式化</el-menu-item>
+                    <el-menu-item class="menu-item" index="6">URL参数提取</el-menu-item>
+                    <el-menu-item class="menu-item" index="7">JS格式化</el-menu-item>
+                    <el-menu-item class="menu-item" index="8">HTML格式化</el-menu-item>
+                    <el-menu-item class="menu-item" index="9">URL编码/解码</el-menu-item>
+                    <el-menu-item class="menu-item" index="10">unicode编码/解码</el-menu-item>
+                </el-menu>
+            </el-aside>
 
-        <!-- 内容区 -->
-        <el-main class="main-content">
-            <!-- <div v-if="activeMenu === '1'" class="main-content-son">
+            <!-- 内容区 -->
+            <el-main class="main-content">
+                <!-- <div v-if="activeMenu === '1'" class="main-content-son">
         <JsonFormat/>
       </div> -->
-            <div v-if="activeMenu === '1'" class="main-content-son">
-                <ObjectToDict />
-            </div>
-            <div v-if="activeMenu === '2'" class="main-content-son">
-                <JsonHighlighter />
-            </div>
+                <div v-if="activeMenu === '1'" class="main-content-son">
+                    <ObjectToDict />
+                </div>
+                <div v-if="activeMenu === '2'" class="main-content-son">
+                    <JsonHighlighter />
+                </div>
 
-            <div v-if="activeMenu === '3'" class="main-content-son">
-                <!-- <FormatCurl/> -->
-                <FormatCurl2 />
-            </div>
+                <div v-if="activeMenu === '3'" class="main-content-son">
+                    <!-- <FormatCurl/> -->
+                    <FormatCurl2 />
+                </div>
 
-            <div v-if="activeMenu === '4'" class="main-content-son">
-                <FormatCookies />
-            </div>
-            <div v-if="activeMenu === '5'" class="main-content-son">
-                <FormatHeaders />
-            </div>
-            <div v-if="activeMenu === '6'" class="main-content-son">
-                <FormatUrl />
-            </div>
-            <div v-if="activeMenu === '7'" class="main-content-son">
-                <FormatJs />
-            </div>
-            <div v-if="activeMenu === '8'" class="main-content-son">
-                <FormatHtml />
-            </div>
-            <div v-if="activeMenu === '9'" class="main-content-son">
-                <EncodeDecodeUrl />
-            </div>
-            <div v-if="activeMenu === '10'" class="main-content-son">
-                <UnicodeDecode />
-            </div>
-        </el-main>
-    </el-container>
+                <div v-if="activeMenu === '4'" class="main-content-son">
+                    <FormatCookies />
+                </div>
+                <div v-if="activeMenu === '5'" class="main-content-son">
+                    <FormatHeaders />
+                </div>
+                <div v-if="activeMenu === '6'" class="main-content-son">
+                    <FormatUrl />
+                </div>
+                <div v-if="activeMenu === '7'" class="main-content-son">
+                    <FormatJs />
+                </div>
+                <div v-if="activeMenu === '8'" class="main-content-son">
+                    <FormatHtml />
+                </div>
+                <div v-if="activeMenu === '9'" class="main-content-son">
+                    <EncodeDecodeUrl />
+                </div>
+                <div v-if="activeMenu === '10'" class="main-content-son">
+                    <UnicodeDecode />
+                </div>
+                <footer class="footer">
+                    <a href="https://beian.miit.gov.cn/" target="_blank" class="beian-link">京ICP备2024101520号-1</a>
+                    <span> | </span>
+                    <a href="https://github.com/wangjingyu001/pytools-/issues" target="_blank" class="friend-link">问题反馈</a>
 
-    <footer class="footer">
-        <a href="https://beian.miit.gov.cn/" target="_blank" class="beian-link">京ICP备2024101520号-1</a>
-        <span> | </span>
-        <a href="https://github.com/wangjingyu001/pytools-/issues" target="_blank" class="friend-link">问题反馈</a>
+                </footer>
+            </el-main>
 
-    </footer>
+        </el-container>
+
+    </div>
 </template>
 
 <script>
@@ -153,6 +156,13 @@ export default {
 /* 侧边栏菜单样式 */
 .menu-aside {
     width: 130px;
+    height: 100vh;
+    max-height: calc(100vh - 20px);
+    /* 确保侧边栏高度适应视口 */
+    overflow-y: auto;
+    /* 允许垂直滚动 */
+    overflow-x: hidden;
+    /* 禁止水平滚动 */
 }
 
 .menu-item:hover {
@@ -164,6 +174,9 @@ export default {
 /* 内容区样式 */
 .main-content {
     /* padding-left: 130px; */
+    height: 100vh;
+    max-height: calc(100vh - 20px);
+    /* 确保内容区高度适应视口 */
     padding: 0px;
     background-color: #fff;
     overflow: hidden;
@@ -176,5 +189,6 @@ export default {
 
 .main-content-son {
     height: 100%;
+    padding: 0px;
 }
 </style>
