@@ -123,14 +123,19 @@ export default {
 
 .menu-item {
     font-size: 12px;
-    /* 设置文字大小 */
     height: 40px;
-    padding-left: 0px !important;
-    /* 去除内边距 */
-    margin: 0;
-    /* 去除外边距 */
-    box-sizing: border-box;
-    /* 包含内边距和边框 */
+    /* 增加以下样式 */
+    display: flex;
+    align-items: center;
+    padding: 0 10px !important;
+    /* 调整左右padding */
+    line-height: 40px;
+    white-space: nowrap;
+    /* 防止文本换行 */
+    overflow: hidden;
+    /* 防止文本溢出 */
+    text-overflow: ellipsis;
+    /* 文本溢出时显示省略号 */
 }
 
 .logo-img {
@@ -159,6 +164,7 @@ export default {
 /* 内容区样式 */
 .main-content {
     /* padding-left: 130px; */
+    padding: 0px;
     background-color: #fff;
     overflow: hidden;
     /* 隐藏滚动条 */
