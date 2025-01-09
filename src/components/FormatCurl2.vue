@@ -47,7 +47,7 @@ export default {
             jsonLeft: "", // 左侧 JSON 输入
             jsonRight: "", // 右侧 JSON 输入
             compareResult: null, // 比对结果
-            responseData : "",
+            responseData: "",
         };
     },
     watch: {
@@ -82,63 +82,63 @@ export default {
         //     curlconverter.toPython
         // },
         parse_curl(curl_commond) {
-    var result = parse(curl_commond, supportedArgs)
+            var result = parse(curl_commond, supportedArgs)
 
 
-    let method = result[0].urls[0].method;
-    let base_url = result[0].urls[0].urlWithoutQueryArray;
-    let params = result[0].urls[0].queryDict ? result[0].urls[0].queryDict.reduce((acc, [key, value]) => {
-        acc[key.toString()] = value.toString();
-        return acc;
-    }, {}) : {};
-    let headers = result[0].headers.headers.reduce((acc, [key, value]) => {
-        acc[key.toString()] = value.toString();
-        return acc;
-    }, {});
-    let cookies = result[0].cookies ? result[0].cookies.reduce((acc, [key, value]) => {
-        acc[key.toString()] = value.toString();
-        return acc;
-    }, {}) : {};
-    if (JSON.stringify(cookies) === '{}' && headers['cookie'] != undefined) {
-            let cookie_split_list = headers['cookie'].split(';');
-            for (let index = 0; index < cookie_split_list.length; index++) {
-                const element = cookie_split_list[index];
-                const [key, value = '']  = element.split('=',2)
-                cookies[key.trim()] = value.trim()
-            
-        }
-    }
+            let method = result[0].urls[0].method;
+            let base_url = result[0].urls[0].urlWithoutQueryArray;
+            let params = result[0].urls[0].queryDict ? result[0].urls[0].queryDict.reduce((acc, [key, value]) => {
+                acc[key.toString()] = value.toString();
+                return acc;
+            }, {}) : {};
+            let headers = result[0].headers.headers.reduce((acc, [key, value]) => {
+                acc[key.toString()] = value.toString();
+                return acc;
+            }, {});
+            let cookies = result[0].cookies ? result[0].cookies.reduce((acc, [key, value]) => {
+                acc[key.toString()] = value.toString();
+                return acc;
+            }, {}) : {};
+            if (JSON.stringify(cookies) === '{}' && headers['cookie'] != undefined) {
+                let cookie_split_list = headers['cookie'].split(';');
+                for (let index = 0; index < cookie_split_list.length; index++) {
+                    const element = cookie_split_list[index];
+                    const [key, value = ''] = element.split('=', 2)
+                    cookies[key.trim()] = value.trim()
 
-    let data, data_temp, data_str;
-    if (method.toString() == "POST") {
-        data = JSON.parse(result[0].dataArray[0])
+                }
+            }
 
-        if (headers['content-type'] && headers['content-type'].indexOf('application/json') !== -1) {
-            data_temp = `
+            let data, data_temp, data_str;
+            if (method.toString() == "POST") {
+                data = JSON.parse(result[0].dataArray[0])
+
+                if (headers['content-type'] && headers['content-type'].indexOf('application/json') !== -1) {
+                    data_temp = `
 post_data = ${JSON.stringify(data, null, 4)}
     `
-        data_str = `, json=post_data`
-        } else if (headers['content-type'] && headers['content-type'].indexOf('application/x-www-form-urlencoded') !== -1) {
-            data_temp = `
+                    data_str = `, json=post_data`
+                } else if (headers['content-type'] && headers['content-type'].indexOf('application/x-www-form-urlencoded') !== -1) {
+                    data_temp = `
 post_data = ${JSON.stringify(data, null, 4)}
     `
-        data_str = `, data=post_data`
-        } else {
-            data_temp = `
+                    data_str = `, data=post_data`
+                } else {
+                    data_temp = `
 post_data = ${JSON.stringify(data, null, 4)}
     `
-            data_str = `, data=json.dumps(post_data,separators=(',', ':'))`
-        }
+                    data_str = `, data=json.dumps(post_data,separators=(',', ':'))`
+                }
 
-    } else {
-        data_temp = ``;
-        data_str = ``;
-    }
-    let requests_code = `import requests
+            } else {
+                data_temp = ``;
+                data_str = ``;
+            }
+            let requests_code = `import requests
 import json 
 # from urllib.parse import urlparse, parse_qs, urlencode, urljoin
 cookies = ${JSON.stringify(cookies, null, 4)}
-cookie_str = "; ".join([f"{{key}}={{value}}" for key, value in cookies.items()])
+cookie_str = "; ".join([f"{key}={value}" for key, value in cookies.items()])
 headers = ${JSON.stringify(headers, null, 4)}
 headers["cookie"] = cookie_str
 params = ${JSON.stringify(params, null, 4)}
@@ -156,16 +156,16 @@ print(response.status_code)
     
     `
 
-    // console.log(requests_code)
-    return requests_code
+            // console.log(requests_code)
+            return requests_code
         },
         fetchData(format_str) {
             try {
                 // 发起请求，替换为你的接口地址
                 // const format_str = this.format_str;
                 const response = this.parse_curl(format_str);
-                    this.jsonEditor2.setValue(response);
-                    console.log("完成格式化")
+                this.jsonEditor2.setValue(response);
+                console.log("完成格式化")
             } catch (error) {
                 console.error("请求失败:", error);
                 this.jsonEditor2.setValue("请求失败，请检查控制台日志或输入的curl。");
