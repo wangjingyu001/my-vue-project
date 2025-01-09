@@ -9,11 +9,39 @@
         <!-- 在 index.html 或 App.vue 的 template 中添加 -->
     <script src="https://unpkg.com/prettier@3.1.0/standalone.js"></script>
     <script src="https://unpkg.com/prettier@3.1.0/plugins/babel.js"></script>
+    <style>
+      /* 加载动画样式 */
+      #loading {
+        position: fixed;
+        width: 100%;
+        height: 100%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        background-color: #fff;
+        z-index: 9999;
+      }
+      .spinner {
+        border: 4px solid rgba(0, 0, 0, 0.1);
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        border-left-color: #09f;
+        animation: spin 1s ease infinite;
+      }
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+    </style>
   </head>
   <body>
     <noscript>
         <strong>We're sorry but my-vue-project doesn't work properly without JavaScript enabled. Please enable it to continue.</strong>
     </noscript>
+    <div id="loading">
+      <div class="spinner"></div>
+    </div>
     <div id="app">
       
     </div>
