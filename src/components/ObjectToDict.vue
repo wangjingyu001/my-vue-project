@@ -17,7 +17,13 @@
                 </el-dropdown-menu>
             </template>
         </el-dropdown>
-
+        <el-button size="small" :loading="isLoading" @click="handleExecute">
+            <el-icon v-if="!isLoading"><arrow-right /></el-icon>
+            <el-icon v-else>
+                <loading />
+            </el-icon>
+            执行
+        </el-button>
 
     </el-row>
     <el-row gutter="20" class="editor-container">
@@ -51,12 +57,15 @@ import "codemirror/addon/fold/brace-fold";
 import "codemirror/lib/codemirror.css";
 import 'codemirror/addon/display/placeholder.js'
 import "codemirror/addon/fold/foldgutter.css"
-import { ArrowDown } from '@element-plus/icons-vue';
+import { ArrowDown, ArrowRight, Loading } from '@element-plus/icons-vue';
+import { ElMessage } from 'element-plus';
 import { objectToDict } from '@/api/api'
 
 export default {
     components: {
         ArrowDown, // 这里注册图标组件
+        ArrowRight,
+        Loading
     },
     data() {
         return {
@@ -71,6 +80,7 @@ export default {
             el_col_right: 12,
             case_input: "",
             case_output: "",
+            isLoading: false, // 按钮加载状态
         };
     },
     watch: {
@@ -119,7 +129,6 @@ export default {
 
         });
 
-        this.editor_left.getWrapperElement().addEventListener('dblclick', this.fetchData);
         this.editor_right = CodeMirror.fromTextArea(this.$refs.editor_right, {
             mode: "application/json",
             foldGutter: true,
@@ -195,6 +204,14 @@ export default {
                 if (this.el_col_right > 0) this.editor_right.refresh();
             });
         },
+        async handleExecute() {
+            this.isLoading = true;
+            try {
+                await this.fetchData();
+            } finally {
+                this.isLoading = false;
+            }
+        },
         async fetchData() {
             let format_str = this.editor_left.getValue();
             try {
@@ -203,20 +220,29 @@ export default {
                 } catch (e) {
                 }
                 const response = await objectToDict(format_str);
-                // this.editor_left.off("change", this.fetchData);
                 if (response.data.status === 200) {
                     this.editor_left.setValue(response.data.result.object_js);
                     this.editor_right.setValue(response.data.result.dict_py);
                     console.log("完成格式化")
                 } else {
-                    this.editor_right.setValue("请求失败，请检查控制台日志或输入的数据。");
+                    this.editor_right.setValue("请求失败，json不合法，请检查控制台日志或输入的数据。");
                     console.log("完成格式化")
+                    ElMessage({
+                        message: '请求失败，json不合法，请检查控制台日志或输入的数据。',
+                        type: 'error',
+                        duration: 3000
+                    });
                 }
 
 
             } catch (error) {
                 console.error("请求失败:", error);
-                this.editor_right.setValue("请求失败，请检查控制台日志或输入的数据。");
+                this.editor_right.setValue("请求失败，请检查控制台日志或输入的数据。", error);
+                ElMessage({
+                    message: '请求失败，请检查控制台日志或输入的数据。',
+                    type: 'error',
+                    duration: 3000
+                });
             } finally {
             }
         },
