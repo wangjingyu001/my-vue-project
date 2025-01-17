@@ -1,5 +1,6 @@
 <template>
     <el-row>
+        <!-- 视图控制下拉菜单 -->
         <el-dropdown @command="handleViewCommand" trigger="click">
             <el-button size="small">
                 视图控制
@@ -7,16 +8,22 @@
             </el-button>
             <template #dropdown>
                 <el-dropdown-menu>
-                    <el-dropdown-item command="leftFull" :disabled="el_col_left > 12">左侧全屏</el-dropdown-item>
-                    <el-dropdown-item command="rightFull" :disabled="el_col_right > 12">右侧全屏</el-dropdown-item>
-                    <el-dropdown-item command="restore" :disabled="el_col_left === 12">还原布局</el-dropdown-item>
+                    <!-- 左侧全屏选项 -->
+                    <el-dropdown-item command="leftFull" v-if="el_col_left <= 12">左侧全屏</el-dropdown-item>
+                    <!-- 右侧全屏选项 -->
+                    <el-dropdown-item command="rightFull" v-if="el_col_right <= 12">右侧全屏</el-dropdown-item>
+                    <!-- 还原布局选项 -->
+                    <el-dropdown-item command="restore" v-if="el_col_left !== 12">还原布局</el-dropdown-item>
                     <!-- 添加空白分隔行 -->
                     <el-dropdown-item disabled style="cursor: default; background: grey; height: 1px; padding: 0; margin: 5px 0;"></el-dropdown-item>
-                    <el-dropdown-item command="foldLeft" :disabled="el_col_right > 12">左侧{{ leftFolded ? '展开' : '折叠' }}</el-dropdown-item>
-                    <el-dropdown-item command="foldRight" :disabled="el_col_left > 12">右侧{{ rightFolded ? '展开' : '折叠' }}</el-dropdown-item>
+                    <!-- 左侧折叠/展开选项 -->
+                    <el-dropdown-item v-if="el_col_right <= 12" command="foldLeft">左侧{{ leftFolded ? '展开' : '折叠' }}</el-dropdown-item>
+                    <!-- 右侧折叠/展开选项 -->
+                    <el-dropdown-item command="foldRight" v-if="el_col_left <= 12">右侧{{ rightFolded ? '展开' : '折叠' }}</el-dropdown-item>
                 </el-dropdown-menu>
             </template>
         </el-dropdown>
+        <!-- 执行按钮 -->
         <el-button size="small" :loading="isLoading" @click="handleExecute">
             <el-icon v-if="!isLoading"><arrow-right /></el-icon>
             <el-icon v-else>
@@ -24,7 +31,6 @@
             </el-icon>
             执行
         </el-button>
-
     </el-row>
     <el-row gutter="20" class="editor-container">
         <!-- 左侧 JSON 编辑区域 -->
@@ -72,10 +78,6 @@ export default {
             error_message: "",
             left_content: "",
             right_content: "",
-            button1: "全屏",
-            button2: "全屏",
-            button3: "折叠",
-            button4: "折叠",
             el_col_left: 12,
             el_col_right: 12,
             case_input: "",
@@ -210,6 +212,10 @@ export default {
                 await this.fetchData();
             } finally {
                 this.isLoading = false;
+                this.el_col_left = 12;
+                this.el_col_right = 12;
+                this.leftFolded = 0;
+                this.rightFolded = 0;
             }
         },
         async fetchData() {

@@ -2,12 +2,11 @@ import axios from "axios";
 
 // 创建 axios 实例
 const apiClient = axios.create({
-  baseURL: "https://pytools.site/api",
-  timeout: 5000, // 请求超时时间
+    baseURL: "https://pytools.site/api",
+    timeout: 5000, // 请求超时时间
   headers: {
     "Content-Type": "application/json",
-  },
-  withCredentials: true,
+  }
 });
 // 通用的 API 调用函数
 const callApi = async (endpoint, data) => {
