@@ -68,6 +68,7 @@ import { ElMessage } from 'element-plus';
 import { objectToDict } from '@/api/api'
 
 export default {
+    name: "object_to_dict",
     components: {
         ArrowDown, // 这里注册图标组件
         ArrowRight,
@@ -84,13 +85,6 @@ export default {
             case_output: "",
             isLoading: false, // 按钮加载状态
         };
-    },
-    watch: {
-        // 监听 left_content 数据的变动
-        left_content(newValue, oldValue) {
-            console.log("左侧数据发生变动：", { newValue, oldValue });
-            this.fetchData(newValue); // 调用处理函数
-        },
     },
     mounted() {
         // 初始化 CodeMirror
