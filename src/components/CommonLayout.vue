@@ -11,7 +11,7 @@
                     <el-menu-item class="menu-item" index="1">object转dict(格式化)</el-menu-item>
                     <el-menu-item class="menu-item" index="2">JSON对比</el-menu-item>
                     <el-menu-item class="menu-item" index="3">cURL转requests</el-menu-item>
-                    <el-menu-item class="menu-item" index="4" disabled>Cookie格式化</el-menu-item>
+                    <el-menu-item class="menu-item" index="4">Cookie格式化</el-menu-item>
                     <el-menu-item class="menu-item" index="5" disabled>Headers格式化</el-menu-item>
                     <el-menu-item class="menu-item" index="6">URL参数提取</el-menu-item>
                     <el-menu-item class="menu-item" index="7">JS格式化</el-menu-item>
@@ -39,7 +39,7 @@
                 </div>
 
                 <div v-if="activeMenu === '4'" class="main-content-son">
-                    <FormatCookies />
+                    <FormatCurl />
                 </div>
                 <div v-if="activeMenu === '5'" class="main-content-son">
                     <FormatHeaders />
