@@ -10,9 +10,9 @@
                 <el-menu default-active="1" class="el-menu-vertical" @select="handleMenuClick">
                     <el-menu-item class="menu-item" index="1">object转dict(格式化)</el-menu-item>
                     <el-menu-item class="menu-item" index="2">JSON对比</el-menu-item>
-                    <el-menu-item class="menu-item" index="3">cURL转requests</el-menu-item>
-                    <el-menu-item class="menu-item" index="4">Cookie格式化</el-menu-item>
-                    <el-menu-item class="menu-item" index="5" disabled>Headers格式化</el-menu-item>
+                    <el-menu-item class="menu-item" index="3">cURL转spiderverse</el-menu-item>
+                    <el-menu-item class="menu-item" index="4">cURL转request py </el-menu-item>
+                    <!-- <el-menu-item class="menu-item" index="5" disabled>Headers格式化</el-menu-item> -->
                     <el-menu-item class="menu-item" index="6">URL参数提取</el-menu-item>
                     <el-menu-item class="menu-item" index="7">JS格式化</el-menu-item>
                     <el-menu-item class="menu-item" index="8">HTML格式化</el-menu-item>
@@ -30,7 +30,7 @@
                     <ObjectToDict />
                 </div>
                 <div v-if="activeMenu === '2'" class="main-content-son">
-                    <JsonHighlighter />
+                    <JsonCompare />
                 </div>
 
                 <div v-if="activeMenu === '3'" class="main-content-son">
@@ -39,13 +39,13 @@
                 </div>
 
                 <div v-if="activeMenu === '4'" class="main-content-son">
-                    <FormatCurl />
+                    <CurlToRequests />
                 </div>
-                <div v-if="activeMenu === '5'" class="main-content-son">
+                <!-- <div v-if="activeMenu === '5'" class="main-content-son">
                     <FormatHeaders />
-                </div>
+                </div> -->
                 <div v-if="activeMenu === '6'" class="main-content-son">
-                    <FormatUrl />
+                    <FormatUrl /> <!--  这里还没写-->
                 </div>
                 <div v-if="activeMenu === '7'" class="main-content-son">
                     <FormatJs />
@@ -73,9 +73,8 @@
 </template>
 
 <script>
-import JsonHighlighter from "./JsonHighlighter.vue"; // 引入组件
+import JsonCompare from "./JsonCompare.vue"; // 引入组件
 import JsonFormat from "./JsonFormat.vue"; // 引入组件
-import FormatCurl from "./FormatCurl.vue";
 import FormatCookies from "./FormatCookies.vue";
 import FormatHeaders from './FormatHeaders.vue';
 import ObjectToDict from './ObjectToDict.vue';
@@ -85,13 +84,14 @@ import FormatHtml from './FormatHtml.vue';
 import FormatUrl from "./FormatUrl.vue";
 import EncodeDecodeUrl from './EncodeDecodeUrl.vue'
 import UnicodeDecode from "./UnicodeDecode.vue";
+import CurlToRequests from "./CurlToRequests.vue";
 
 
 export default {
     components: {
-        JsonHighlighter,
+        JsonCompare,
         JsonFormat,
-        FormatCurl,
+        CurlToRequests,
         FormatCurl2,
         FormatCookies,
         FormatHeaders,

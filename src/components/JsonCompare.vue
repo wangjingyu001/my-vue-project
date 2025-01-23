@@ -11,19 +11,25 @@
         <el-checkbox v-model="show_linenums" label="显示行号" size="small" border />
     </el-row>
 
+    <el-row>
+        <el-col :span="5" v-if="error_message" class="error-text">{{ error_message }}</el-col>
+        <el-col :span="4" v-if="!error_message" class="highlight_changed"> changed : {{ changed_nums }}</el-col>
+        <el-col :span="4" v-if="!error_message" class="highlight_removed"> removed : {{ removed_nums }}</el-col>
+        <el-col :span="4" v-if="!error_message" class="highlight_added"> added : {{ added_nums }}</el-col>
+    </el-row>
 
     <el-row gutter="20" class="editor-container">
         <!-- 左侧编辑区域 -->
         <el-col :span="12">
             <div class="editor-wrapper">
-                <textarea ref="editor_left" class="editor-left"></textarea>
+                <textarea ref="editor_left" placeholder="请输入JSON" class="editor-left"></textarea>
             </div>
         </el-col>
 
         <!-- 右侧编辑区域 -->
         <el-col :span="12">
             <div class="editor-wrapper">
-                <textarea ref="editor_right" class="editor-right"></textarea>
+                <textarea ref="editor_right" placeholder="请输入JSON" class="editor-right"></textarea>
             </div>
         </el-col>
 
@@ -33,7 +39,6 @@
 <script>
 import CodeMirror from "codemirror";
 import "codemirror/mode/javascript/javascript";
-import 'codemirror/mode/python/python';
 import "codemirror/lib/codemirror.css";
 import "codemirror/theme/monokai.css";
 import 'codemirror/addon/scroll/simplescrollbars.css'
@@ -43,26 +48,25 @@ import "codemirror/addon/fold/foldgutter";
 import "codemirror/addon/fold/brace-fold";
 import "codemirror/lib/codemirror.css";
 import "codemirror/addon/fold/foldgutter.css"
-import 'codemirror/addon/fold/brace-fold';
-import 'codemirror/addon/fold/comment-fold';
-import "codemirror/addon/fold/indent-fold";
-// import * as curlconverter from 'curlconverter';
-import { supportedArgs } from 'curlconverter/dist/src/generators/python/python.js';
-import { parse } from 'curlconverter/dist/src/parse.js';
-
-
+import { Loading } from '@element-plus/icons-vue';
+import { ElMessage } from 'element-plus';
+import { compareJson } from "@/api/api";
+// import { formatHeaders } from "@/api/api";
 export default {
-    name: "curlconverter",
+    name: "json_compare",
     components: {
         Loading
     },
     data() {
         return {
             error_message: "",
+            changed_nums: 0,
+            added_nums: 0,
+            removed_nums: 0,
             left_content: "",
             right_content: "",
             isLoading: false, // 按钮加载状态
-            show_linenums: false,
+            show_linenums: true,
         };
     },
     mounted() {
@@ -194,7 +198,7 @@ export default {
 /* 添加 CodeMirror 相关样式 */
 :deep(.CodeMirror) {
     height: 100% !important;
-    max-height: calc(100vh - 75px);
+    max-height: calc(100vh - 95px);
     border: 1px solid #0b4bdf;
     border-radius: 4px;
     font-family: monospace;

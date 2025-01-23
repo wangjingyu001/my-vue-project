@@ -68,7 +68,7 @@ import { parse } from 'curlconverter/dist/src/parse.js';
 
 
 export default {
-    name: "curl_to_spiderverse",
+    name: "curl_to_requests",
     components: {
         // Loading
     },
@@ -197,44 +197,44 @@ export default {
             if (method.toString() == "POST") {
                 data = JSON.parse(result[0].dataArray[0])
 
-                data_python = this.trans_object_to_dict(data, 8).slice(0, -1) + '    }';
+                data_python = this.trans_object_to_dict(data, 4);
 
                 if (headers['content-type'] && headers['content-type'].indexOf('application/json') !== -1) {
                     data_temp = `
-    post_data = ${data_python}
+post_data = ${data_python}
     `
-                    data_str = `, 'json' : post_data`
+                    data_str = `, json=post_data`
                 } else if (headers['content-type'] && headers['content-type'].indexOf('application/x-www-form-urlencoded') !== -1) {
                     data_temp = `
-    post_data = ${data_python}
+post_data = ${data_python}
     `
-                    data_str = `, 'form' : post_data`
+                    data_str = `, data=post_data`
                 } else {
                     data_temp = `
-    post_data = ${data_python}
+post_data = ${data_python}
     `
-                    data_str = `, 'post_data': json.dumps(post_data,separators=(',', ':'))`
+                    data_str = `, data=json.dumps(post_data,separators=(',', ':'))`
                 }
 
             } else {
                 data_temp = ``;
                 data_str = ``;
             }
-            let requests_code = `
-def request_composer(data, runtime_vars):
-    import json
-    from urllib.parse import urlparse, parse_qs, urlencode, urljoin
-    headers = ${this.deal_headers_cookie(headers, 8).slice(0, -1) + '    }'}
-    cookies = ${this.trans_object_to_dict(cookies, 8).slice(0, -1) + '    }'}
-    cookie_str = "; ".join([f"{key}={value}" for key, value in cookies.items()])
-    headers["cookie"] = cookie_str
-    params = ${this.trans_object_to_dict(params, 8).slice(0, -1) + '    }'}
-    ${data_temp}
-    base_url = "${base_url}"
-    query_string = urlencode(params)
-    url = urljoin(base_url, '?' + query_string)
-     
-    return {'url': url, 'method': '${method.toLowerCase()}','headers':headers${data_str},'retries':3}
+            let requests_code = `import requests
+import json 
+headers = ${this.deal_headers_cookie(headers, 4)}
+cookies = ${this.trans_object_to_dict(cookies, 4)}
+params = ${this.trans_object_to_dict(params, 4)}
+${data_temp}
+url = "${base_url}"
+
+response = requests.${method.toLowerCase()}(base_url, params=params, cookies=cookies, headers=headers${data_str}, verify=False)
+print(response.text)
+print(response.status_code)
+
+# from lxml import etree
+# html = etree.HTML(response.text)
+
     
     `
 
