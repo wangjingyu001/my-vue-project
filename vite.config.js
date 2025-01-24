@@ -5,6 +5,10 @@ import topLevelAwait from 'vite-plugin-top-level-await'
 
 // https://vite.dev/config/
 export default defineConfig({
+    define: {
+        'process.env': {}, // 模拟空的 process.env
+        'process.cwd': '() => "/"', // 模拟返回根路径
+    },
   plugins: [
     topLevelAwait(),
     vue()],
