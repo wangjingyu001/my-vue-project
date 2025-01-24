@@ -7,14 +7,15 @@ import topLevelAwait from 'vite-plugin-top-level-await'
 export default defineConfig({
     define: {
         'process.env': {}, // 模拟空的 process.env
-        'process.cwd': '() => "/"', // 模拟返回根路径
+        // 'process.cwd': '"/"',  // 修改为字符串, // 模拟返回根路径
     },
   plugins: [
     topLevelAwait(),
     vue()],
   resolve: {
     alias: {
-      "@": path.resolve(__dirname, "src"), // 确保 @ 映射到 src 目录
+          "@": path.resolve(__dirname, "src"), // 确保 @ 映射到 src 目录
+        'process': 'process/browser'
     },
   },
   build: {

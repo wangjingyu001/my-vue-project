@@ -45,7 +45,15 @@
     <div id="app">
       
     </div>
-
+    <script>
+        // 模拟 process 对象
+        if (typeof process === 'undefined') {
+          window.process = {
+            cwd: () => '/', // 模拟 process.cwd()
+            env: {},        // 模拟 process.env
+          };
+        }
+      </script>
     <script type="module" src="/src/main.js"></script>
   </body>
   <link rel="stylesheet" href="style.css">
