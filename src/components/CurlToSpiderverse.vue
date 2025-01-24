@@ -65,12 +65,12 @@ import 'codemirror/addon/fold/comment-fold';
 import "codemirror/addon/fold/indent-fold";
 import { supportedArgs } from 'curlconverter/dist/src/generators/python/python.js';
 import { parse } from 'curlconverter/dist/src/parse.js';
-
+import { ArrowDown } from '@element-plus/icons-vue';
 
 export default {
     name: "curl_to_spiderverse",
     components: {
-        // Loading
+        ArrowDown
     },
     data() {
         return {

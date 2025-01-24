@@ -35,7 +35,7 @@
 
                 <div v-if="activeMenu === '3'" class="main-content-son">
                     <!-- <FormatCurl/> -->
-                    <FormatCurl2 />
+                    <CurlToSpiderverse />
                 </div>
 
                 <div v-if="activeMenu === '4'" class="main-content-son">
@@ -78,7 +78,7 @@ import JsonFormat from "./JsonFormat.vue"; // 引入组件
 import FormatCookies from "./FormatCookies.vue";
 import FormatHeaders from './FormatHeaders.vue';
 import ObjectToDict from './ObjectToDict.vue';
-import FormatCurl2 from "./FormatCurl2.vue";
+import CurlToSpiderverse from "./CurlToSpiderverse.vue";
 import FormatJs from "./FormatJs.vue";
 import FormatHtml from './FormatHtml.vue';
 import FormatUrl from "./FormatUrl.vue";
@@ -92,7 +92,7 @@ export default {
         JsonCompare,
         JsonFormat,
         CurlToRequests,
-        FormatCurl2,
+        CurlToSpiderverse,
         FormatCookies,
         FormatHeaders,
         FormatUrl,

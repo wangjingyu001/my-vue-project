@@ -65,12 +65,12 @@ import 'codemirror/addon/fold/comment-fold';
 import "codemirror/addon/fold/indent-fold";
 import { supportedArgs } from 'curlconverter/dist/src/generators/python/python.js';
 import { parse } from 'curlconverter/dist/src/parse.js';
-
+import { ArrowDown } from '@element-plus/icons-vue';
 
 export default {
     name: "curl_to_requests",
     components: {
-        // Loading
+        ArrowDown
     },
     data() {
         return {
@@ -228,7 +228,7 @@ params = ${this.trans_object_to_dict(params, 4)}
 ${data_temp}
 url = "${base_url}"
 
-response = requests.${method.toLowerCase()}(base_url, params=params, cookies=cookies, headers=headers${data_str}, verify=False)
+response = requests.${method.toLowerCase()}(url, params=params, cookies=cookies, headers=headers${data_str}, verify=False)
 print(response.text)
 print(response.status_code)
 

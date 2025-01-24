@@ -48,13 +48,14 @@ import "codemirror/addon/fold/foldgutter";
 import "codemirror/addon/fold/brace-fold";
 import "codemirror/lib/codemirror.css";
 import "codemirror/addon/fold/foldgutter.css"
-import { Loading } from '@element-plus/icons-vue';
+import { Loading, ArrowRight } from '@element-plus/icons-vue';
 import { ElMessage } from 'element-plus';
 import { compareJson } from "@/api/api";
 // import { formatHeaders } from "@/api/api";
 export default {
     name: "json_compare",
     components: {
+        ArrowRight,
         Loading
     },
     data() {
