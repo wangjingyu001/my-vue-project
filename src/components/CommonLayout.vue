@@ -75,8 +75,6 @@
 <script>
 import JsonCompare from "./JsonCompare.vue"; // 引入组件
 import JsonFormat from "./JsonFormat.vue"; // 引入组件
-import FormatCookies from "./FormatCookies.vue";
-import FormatHeaders from './FormatHeaders.vue';
 import ObjectToDict from './ObjectToDict.vue';
 import CurlToSpiderverse from "./CurlToSpiderverse.vue";
 import FormatJs from "./FormatJs.vue";
@@ -93,8 +91,6 @@ export default {
         JsonFormat,
         CurlToRequests,
         CurlToSpiderverse,
-        FormatCookies,
-        FormatHeaders,
         FormatUrl,
         ObjectToDict,
         FormatJs,

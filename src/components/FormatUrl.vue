@@ -1,22 +1,20 @@
 <template>
 
 
-    <el-row gutter="20" class="json-format" style="height: 100%;">
-        <!-- 左侧 JSON 编辑区域 -->
+    <el-row gutter="20" class="editor-container">
+        <!-- 左侧编辑区域 -->
 
-        <el-col :span="12" style="height: 100%;">
-            <el-card class="card" body-style="height:100%">
-                <textarea v-model="jsonLeft" placeholder="输入url ,例如
-https://example.com/profile?user=alice&id=1234&active=true
-                        " class="json-editor"></textarea>
-            </el-card>
+        <el-col :span="12">
+            <div class="editor-wrapper">
+                <textarea v-model="left_content" ref="editor_left" class="editor-left"></textarea>
+            </div>
         </el-col>
 
-        <!-- 右侧 JSON 编辑区域 -->
-        <el-col :span="12" style="height: 100%;">
-            <el-card class="card" body-style="height:100%">
-                <textarea v-model="jsonRight" ref="jsonEditor2" placeholder="点击处理" class="json-editor"></textarea>
-            </el-card>
+        <!-- 右侧编辑区域 -->
+        <el-col :span="12">
+            <div class="editor-wrapper">
+                <textarea v-model="right_content" ref="editor_right" class="editor-right"></textarea>
+            </div>
         </el-col>
     </el-row>
 
@@ -34,61 +32,68 @@ import "codemirror/addon/fold/foldgutter";
 import "codemirror/addon/fold/brace-fold";
 import "codemirror/lib/codemirror.css";
 import "codemirror/addon/fold/foldgutter.css"
+import 'codemirror/addon/display/placeholder.js'
 
 export default {
     data() {
         return {
-            jsonLeft: "", // 左侧 JSON 输入
-            jsonRight: "", // 右侧 JSON 输入
-            compareResult: null, // 比对结果
-            responseData : "",
+            error_message: "",
+            left_content: "",
+            right_content: ""
         };
     },
-    watch: {
-        // 监听 text 数据的变动
-        jsonLeft(newValue, oldValue) {
-            console.log("数据发生变动：", { newValue, oldValue });
-            this.formaturl(newValue); // 调用处理函数
-        },
-    },
     mounted() {
-        this.format  = window.prettier
-        this.babelParser = window.prettierPlugins.babel
         // 初始化 CodeMirror
-        this.jsonEditor2 = CodeMirror.fromTextArea(this.$refs.jsonEditor2, {
-            mode: "application/json",
-            //   theme: "monokai",
+        this.editor_left = CodeMirror.fromTextArea(this.$refs.editor_left, {
+            mode: "text/plain",
             foldGutter: true,
             gutters: ["CodeMirror-linenumbers", "CodeMirror-foldgutter"], // 添加折叠的 gutter
-            // lineWrapping: true, // 启用自动换行
             lineNumbers: true,
-            scrollbarStyle: "simple" // 使用原生滚动条样式
+            scrollbarStyle: "simple", // 使用原生滚动条样式
+            placeholder: `输入 url 
+https://www.google.com/search?q=1&rlz=1C1GCHD_en__1135__1135&oq=1+&gs_lcrp=EgZjaHJvbWUyBggAEEUYOTIGCAEQRRg8MgYIAhBFGDwyBggDEEUYPDIGCAQQRRg8MgYIBRBFGDwyBggGEEUYPDIGCAcQRRhB0gEINTEzOGowajeoAgCwAgA&sourceid=chrome&ie=UTF-8
+            `
         });
-        this.jsonEditor2.setSize('100%', '100%'); // 设置 CodeMirror 高度为 100% 
-        this.jsonEditor2.setValue(`
-        
-url = "https://example.com/profile"
+        this.editor_right = CodeMirror.fromTextArea(this.$refs.editor_right, {
+            mode: "python",
+            foldGutter: true,
+            simplescrollbars: 'simple',
+            gutters: ["CodeMirror-linenumbers", "CodeMirror-foldgutter"], // 添加折叠的 gutter
+            lineNumbers: true,
+            placeholder: `
+
+url = "https://www.google.com/search"
 params = {
-    "user": "alice",
-    "id": "1234",
-    "active": "true"
+    "q": "1",
+    "rlz": "1C1GCHD_en__1135__1135",
+    "oq": "1 ",
+    "gs_lcrp": "EgZjaHJvbWUyBggAEEUYOTIGCAEQRRg8MgYIAhBFGDwyBggDEEUYPDIGCAQQRRg8MgYIBRBFGDwyBggGEEUYPDIGCAcQRRhB0gEINTEzOGowajeoAgCwAgA",
+    "sourceid": "chrome",
+    "ie": "UTF-8"
 }
 
 
+
 from urllib.parse import urlparse, parse_qs, urlencode, urljoin
-base_url = "https://example.com/profile"
+base_url = "https://www.google.com/search"
 params = {
-    "user": "alice",
-    "id": "1234",
-    "active": "true"
+    "q": "1",
+    "rlz": "1C1GCHD_en__1135__1135",
+    "oq": "1 ",
+    "gs_lcrp": "EgZjaHJvbWUyBggAEEUYOTIGCAEQRRg8MgYIAhBFGDwyBggDEEUYPDIGCAQQRRg8MgYIBRBFGDwyBggGEEUYPDIGCAcQRRhB0gEINTEzOGowajeoAgCwAgA",
+    "sourceid": "chrome",
+    "ie": "UTF-8"
 }
 query_string = urlencode(params)
 full_url = urljoin(base_url, '?' + query_string)
 
-                
-        `)
-        this.jsonLeft = "";
-     
+
+            `,
+        });
+        this.editor_left.on('change', (instance, changeObj) => {
+            this.formaturl(instance.getValue());
+        });
+
     },
     methods: {
         extractUrlParams(urlString) {
@@ -105,6 +110,7 @@ full_url = urljoin(base_url, '?' + query_string)
 
 
                 const response = `
+
 url = "${base_url}"
 params = ${JSON.stringify(params, null, 4)}
 
@@ -115,45 +121,60 @@ params = ${JSON.stringify(params, null, 4)}
 query_string = urlencode(params)
 full_url = urljoin(base_url, '?' + query_string)
 
+
                 `
-                
-                this.jsonEditor2.setValue(response);
-      
-                
+
+                this.editor_right.setValue(response);
+
+
             } catch (error) {
-                
+
                 console.error("请求失败:", error);
-                this.jsonEditor2.setValue("请求失败，请检查控制台日志或输入的cookies。");
+                this.editor_right.setValue("请求失败，请检查控制台日志或输入的cookies。");
             }
- 
+
         }
     },
 };
 </script>
 
 <style scoped>
-.json-editor {
-    width: 100%;
+.editor-container {
     height: 100%;
-    border: 1px solid #dcdfe6;
+    margin: 0;
+}
+
+.editor-wrapper {
+    height: 100%;
+    padding: 5px;
+}
+
+/* 添加 CodeMirror 相关样式 */
+:deep(.CodeMirror) {
+    height: 100% !important;
+    max-height: calc(100vh - 51px);
+    border: 1px solid #0b4bdf;
     border-radius: 4px;
-    padding: 10px;
     font-family: monospace;
     font-size: 14px;
-    box-sizing: border-box;
-    overflow: auto;
-    /* 确保内容超出时出现滚动条 */
 }
 
-.error-text {
-    color: red;
-    font-size: 12px;
-    margin-top: 5px;
+:deep(.CodeMirror-gutters) {
+    border-right: 1px solid #4b4b4b;
+    /* background-color: #272822; */
 }
 
-.card {
-    height: 100%;
-    overflow: hidden;
-    /* 确保卡片内容不会超出卡片边界 */
+/* 可以添加一些悬停效果 */
+.editor-card:hover {
+    border-color: var(--el-color-primary);
+}
+
+
+/* 设置 CodeMirror 的 placeholder 样式 */
+.CodeMirror .CodeMirror-placeholder {
+    color: #ccc;
+    /* 将 placeholder 颜色设置为浅灰色 */
+    opacity: 1;
+    /* 确保 placeholder 不透明 */
 }
 </style>
