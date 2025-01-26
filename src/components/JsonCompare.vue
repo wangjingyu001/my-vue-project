@@ -132,27 +132,30 @@ export default {
                     duration: 3000
                 });
                 this.error_message = '解析数据失败';
+                this.isLoading = false;
                 return;
             }
             const rpjs = JSON.parse(response.data.result)
             if (rpjs.json1 == "parse error") {
                 this.error_message = '左侧无效的JSON格式';
-                console.error(error_message);
+                console.error(this.error_message);
                 ElMessage({
-                    message: error_message,
+                    message: this.error_message,
                     type: 'error',
                     duration: 3000
                 });
+                this.isLoading = false;
                 return;
             }
             if (rpjs.json2 == "parse error") {
                 this.error_message = '右侧无效的JSON格式';
-                console.error(error_message);
+                console.error(this.error_message);
                 ElMessage({
-                    message: error_message,
+                    message: this.error_message,
                     type: 'error',
                     duration: 3000
                 });
+                this.isLoading = false;
                 return;
             }
 
