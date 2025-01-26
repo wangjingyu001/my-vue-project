@@ -1,36 +1,40 @@
 <template>
     <el-row>
-        <el-col :span="2" :offset="0" v-if="el_col_left >= 12">
-            <el-button @click="fullScreenSpan('left')">
-                {{ button1 }}
+        <!-- 视图控制下拉菜单 -->
+        <el-dropdown @command="handleViewCommand" trigger="click">
+            <el-button size="small">
+                视图控制
+                <el-icon class="el-icon--right"><arrow-down /></el-icon>
             </el-button>
-        </el-col>
-        <el-col :span="2" :offset="0" v-if="el_col_left >= 12">
-            <el-button @click="toggleFold('left')">{{ button3 }}</el-button>
-        </el-col>
-        <el-col :span="2" :offset="20 - el_col_right" v-if="el_col_right >= 12">
-            <el-button @click="fullScreenSpan('right')">
-                {{ button2 }}
-            </el-button>
-        </el-col>
-        <el-col :span="2" :offset="0" v-if="el_col_right >= 12">
-            <el-button @click="toggleFold('right')">{{ button4 }}</el-button>
-        </el-col>
-
+            <template #dropdown>
+                <el-dropdown-menu>
+                    <!-- 左侧全屏选项 -->
+                    <el-dropdown-item command="leftFull" v-if="el_col_left <= 12">左侧全屏</el-dropdown-item>
+                    <!-- 右侧全屏选项 -->
+                    <el-dropdown-item command="rightFull" v-if="el_col_right <= 12">右侧全屏</el-dropdown-item>
+                    <!-- 还原布局选项 -->
+                    <el-dropdown-item command="restore" v-if="el_col_left !== 12">还原布局</el-dropdown-item>
+                </el-dropdown-menu>
+            </template>
+        </el-dropdown>
+        <!-- 执行按钮 -->
+        <el-button @click="unicode_decode" size="small">unicode解码</el-button>
+        <el-button @click="unicode_encode" size="small">unicode编码</el-button>
     </el-row>
-    <el-row :gutter="20" class="object-to-dict" style="height: 100%;">
-        <!-- 左侧 JSON 编辑区域 -->
-        <el-col :span="el_col_left" style="height: 100%;">
-            <el-card class="card" body-style="height:100%">
-                <textarea ref="jsonEditor_left" placeholder="请输入JSON" class="json-editor-left"></textarea>
-            </el-card>
+
+    <el-row :gutter="20" class="editor-container">
+        <!-- 左侧编辑区域 -->
+        <el-col :span="el_col_left">
+            <div class="editor-wrapper">
+                <textarea v-model="left_content" ref="editor_left" class="editor-left"></textarea>
+            </div>
         </el-col>
 
-        <!-- 右侧 JSON 编辑区域 -->
-        <el-col :span="el_col_right" style="height: 100%;">
-            <el-card class="card" body-style="height:100%">
-                <textarea ref="jsonEditor_right" placeholder="请输入JSON" class="json-editor-right"></textarea>
-            </el-card>
+        <!-- 右侧编辑区域 -->
+        <el-col :span="el_col_right">
+            <div class="editor-wrapper">
+                <textarea v-model="right_content" ref="editor_right" class="editor-right"></textarea>
+            </div>
         </el-col>
 
     </el-row>
@@ -38,93 +42,102 @@
 
 <script>
 import CodeMirror from "codemirror";
+import "codemirror/lib/codemirror.css";
+
+// 模式引入
 import "codemirror/mode/javascript/javascript";
-import "codemirror/lib/codemirror.css";
+import "codemirror/mode/xml/xml";
+import "codemirror/mode/css/css";
+
+// 主题
 import "codemirror/theme/monokai.css";
-import 'codemirror/addon/scroll/simplescrollbars.css'
-import 'codemirror/addon/scroll/simplescrollbars'
-import "codemirror/addon/fold/foldcode";
-import "codemirror/addon/fold/foldgutter";
-import "codemirror/addon/fold/brace-fold";
-import "codemirror/lib/codemirror.css";
-import "codemirror/addon/fold/foldgutter.css"
+import { ArrowDown } from '@element-plus/icons-vue';
+
+// 滚动条
+import 'codemirror/addon/scroll/simplescrollbars.css';
+import 'codemirror/addon/scroll/simplescrollbars';
 import 'codemirror/addon/display/placeholder.js'
 
+
 export default {
+    components: {
+        ArrowDown
+    },
     data() {
         return {
-            error_message: "",
             left_content: "",
             right_content: "",
+            el_col_left: 12,
+            el_col_right: 12,
         };
-    },
-    watch: {
-        // 监听 left_content 数据的变动
-        left_content(newValue, oldValue) {
-            console.log("左侧数据发生变动：", { newValue, oldValue });
-            this.fetchData(newValue); // 调用处理函数
-        },
-        // 监听 right_content 数据的变动
-        // right_content(newValue, oldValue) {
-        //     console.log("右侧数据发生变动：", { newValue, oldValue });
-        //     this.formatcurl(newValue); // 调用处理函数
-        // },
     },
     mounted() {
         // 初始化 CodeMirror
-        this.jsonEditor_left = CodeMirror.fromTextArea(this.$refs.jsonEditor_left, {
-            mode: "application/json",
-            foldGutter: true,
-            gutters: ["CodeMirror-linenumbers", "CodeMirror-foldgutter"], // 添加折叠的 gutter
-            theme: "monokai",
-            lineNumbers: true,
+        this.placeholder_left = `
+python工具库认准pytools
+`
+        this.editor_left = CodeMirror.fromTextArea(this.$refs.editor_left, {
+            mode: "text/plain",
+            simplescrollbars: 'simple',
+            placeholder: this.placeholder_left
         });
-        // this.jsonEditor_left.on( "mousedown", this.fetchData)
-        this.jsonEditor_left.getWrapperElement().addEventListener('dblclick', this.fetchData);
-        this.jsonEditor_right = CodeMirror.fromTextArea(this.$refs.jsonEditor_right, {
-            mode: "application/json",
-            foldGutter: true,
-            gutters: ["CodeMirror-linenumbers", "CodeMirror-foldgutter"], // 添加折叠的 gutter
-            theme: "monokai",
-            lineNumbers: true,
+        this.placeholder_right = `
+python\u5de5\u5177\u5e93\u8ba4\u51c6pytools
+        `
+        this.editor_right = CodeMirror.fromTextArea(this.$refs.editor_right, {
+            mode: "text/plain",
+            simplescrollbars: 'simple',
+            placeholder: this.placeholder_right
+
         });
-        this.jsonEditor_left.setSize('100%', '100%'); // 设置 CodeMirror 高度为 100% 
-        this.jsonEditor_right.setSize('100%', '100%'); // 设置 CodeMirror 高度为 100% 
+        this.editor_left.setSize('100%', '100%'); // 设置 CodeMirror 高度为 100% 
+        this.editor_right.setSize('100%', '100%'); // 设置 CodeMirror 高度为 100% 
         this.left_content = "";
         this.right_content = "";
 
+        this.editor_left.on('focus', () => {
+            // 清空 placeholder
+            this.editor_left.setOption('placeholder', '');
+        });
+        this.editor_right.on('focus', () => {
+            // 清空 placeholder
+            this.editor_right.setOption('placeholder', '');
+        });
+        this.editor_left.on('blur', () => {
+            // 如果编辑器内容为空，恢复 placeholder
+            if (this.editor_left.getValue() === '') {
+                this.editor_left.setOption('placeholder', this.placeholder_left);
+            }
+        });
+        this.editor_right.on('blur', () => {
+            // 如果编辑器内容为空，恢复 placeholder
+            if (this.editor_right.getValue() === '') {
+                this.editor_right.setOption('placeholder', this.placeholder_right);
+            }
+        });
     },
     methods: {
-        fullScreenSpan(area) {
-            if (area == "left") {
-                // let editor = this.jsonEditor_left;
-                // this.button1 = this.button1 == "全屏" ? "还原" : "全屏";
-                if (this.button1 == "全屏") {
-                    this.button1 = "还原"
-                    this.el_col_left = 24
-                    this.el_col_right = 0
-                } else {
-                    this.button1 = "全屏"
-                    this.el_col_left = 12
-                    this.el_col_right = 12
-                }
-                this.$nextTick(() => {
-                    this.jsonEditor_left.refresh(); // 通知 CodeMirror 刷新布局
-                });
-            } else {
-                if (this.button2 == "全屏") {
-                    this.button2 = "还原"
-                    this.el_col_left = 0
-                    this.el_col_right = 24
-                } else {
-                    this.button2 = "全屏"
-                    this.el_col_left = 12
-                    this.el_col_right = 12
-                }
-                this.$nextTick(() => {
-                    this.jsonEditor_right.refresh(); // 通知 CodeMirror 刷新布局
-                });
+        handleViewCommand(command) {
+            switch (command) {
+                case 'leftFull':
+                    this.el_col_left = 24;
+                    this.el_col_right = 0;
+                    break;
+                case 'rightFull':
+                    this.el_col_left = 0;
+                    this.el_col_right = 24;
+                    break;
+                case 'restore':
+                    this.el_col_left = 12;
+                    this.el_col_right = 12;
+                    break;
             }
+
+            // 在布局变化后刷新编辑器
+            this.$nextTick(() => {
+                if (this.el_col_left > 0) this.editor_left.refresh();
+                if (this.el_col_right > 0) this.editor_right.refresh();
+            });
         },
         encodeMixedUnicode(input) {
             return input.split('').map(char => {
@@ -140,57 +153,64 @@ export default {
                 return String.fromCharCode(parseInt(code, 16));
             });
         },
-        fetchData() {
-            let format_str = this.jsonEditor_left.getValue();
+        unicode_decode() {
             try {
-
-                this.jsonEditor_left.setValue(this.encodeMixedUnicode(format_str));
-                this.jsonEditor_right.setValue(this.decodeMixedUnicode(format_str));
+                this.editor_right.setValue(this.decodeMixedUnicode(this.editor_left.getValue()));
                 console.log("完成格式化")
 
 
 
             } catch (error) {
+
                 console.error("请求失败:", error);
-                this.jsonEditor_right.setValue("请求失败，请检查控制台日志或输入的数据。");
-            } finally {
-                // this.jsonEditor_left.on("change", this.fetchData);
+                this.editor_right.setValue("请求失败,请检查控制台日志或输入");
             }
+
+
         },
+        unicode_encode() {
+            try {
+                this.editor_right.setValue(this.encodeMixedUnicode(this.editor_left.getValue()));
+                console.log("完成格式化")
+            } catch (error) {
+                console.error("请求失败:", error);
+                this.editor_right.setValue("请求失败,请检查控制台日志或输入");
+            }
+
+
+        }
     },
 };
 </script>
 
 <style scoped>
-.json-editor-left {
-    width: 100%;
+.editor-container {
     height: 100%;
-    border: 1px solid #dcdfe6;
-    border-radius: 4px;
-    padding: 10px;
-    font-family: monospace;
-    font-size: 14px;
-    box-sizing: border-box;
-    overflow: auto;
-    /* 确保内容超出时出现滚动条 */
+    margin: 0;
 }
 
-.json-editor-right {
-    width: 100%;
+.editor-wrapper {
     height: 100%;
-    border: 1px solid #dcdfe6;
-    border-radius: 4px;
-    padding: 10px;
-    font-family: monospace;
-    font-size: 14px;
-    box-sizing: border-box;
-    overflow: auto;
-    /* 确保内容超出时出现滚动条 */
+    padding: 5px;
 }
 
-.card {
-    height: 100%;
-    overflow: hidden;
-    /* 确保卡片内容不会超出卡片边界 */
+/* 添加 CodeMirror 相关样式 */
+:deep(.CodeMirror) {
+    height: 100% !important;
+    max-height: calc(100vh - 75px);
+    border: 1px solid #0b4bdf;
+    border-radius: 4px;
+    font-family: monospace;
+    font-size: 14px;
+}
+
+:deep(.CodeMirror-gutters) {
+    border-right: 1px solid #4b4b4b;
+    /* background-color: #272822; */
+}
+
+/* 可以添加一些悬停效果 */
+.editor-card:hover {
+    border-color: var(--el-color-primary);
 }
 </style>
