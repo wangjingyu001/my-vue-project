@@ -101,6 +101,14 @@ export default {
         }
     },
     methods: {
+        highlightLines(editor, lines, class_type) {
+
+            editor.operation(() => {
+                lines.forEach(lineNum => {
+                    editor.addLineClass(lineNum, "background", class_type); // 减1是因为行号是从0开始的
+                });
+            });
+        },
         clearHighlights(editor) {
             editor.operation(() => {
                 for (let i = 0; i < editor.lineCount(); i++) {
