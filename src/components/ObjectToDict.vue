@@ -32,7 +32,7 @@
             执行
         </el-button>
     </el-row>
-    <el-row gutter="20" class="editor-container">
+    <el-row :gutter="20" class="editor-container">
         <!-- 左侧 JSON 编辑区域 -->
         <el-col :span="el_col_left">
             <div class="editor-wrapper">
@@ -84,6 +84,8 @@ export default {
             case_input: "",
             case_output: "",
             isLoading: false, // 按钮加载状态
+            leftFolded: false,
+            rightFolded: false,
         };
     },
     mounted() {

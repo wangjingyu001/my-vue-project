@@ -1,7 +1,7 @@
 <template>
 
 
-    <el-row gutter="20" class="editor-container">
+    <el-row :gutter="20" class="editor-container">
         <!-- 左侧编辑区域 -->
 
         <el-col :span="12">

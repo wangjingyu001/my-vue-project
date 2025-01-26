@@ -30,7 +30,7 @@
             压缩JS </el-button>
     </el-row>
 
-    <el-row gutter="20" class="editor-container">
+    <el-row :gutter="20" class="editor-container">
         <!-- 左侧编辑区域 -->
         <el-col :span="el_col_left">
             <div class="editor-wrapper">
@@ -89,6 +89,8 @@ export default {
             el_col_right: 12,
             show_linenums: false,
             lineWrapping: false,
+            leftFolded: false,
+            rightFolded: false,
         };
     },
     mounted() {

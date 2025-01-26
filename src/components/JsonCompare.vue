@@ -18,7 +18,7 @@
         <el-col :span="4" v-if="!error_message" class="highlight_added"> added : {{ added_nums }}</el-col>
     </el-row>
 
-    <el-row gutter="20" class="editor-container">
+    <el-row :gutter="20" class="editor-container">
         <!-- 左侧编辑区域 -->
         <el-col :span="12">
             <div class="editor-wrapper">

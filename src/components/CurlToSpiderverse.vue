@@ -28,7 +28,7 @@
         <el-checkbox v-model="show_linenums" label="显示行号" size="small" border />
     </el-row>
 
-    <el-row gutter="20" class="editor-container">
+    <el-row :gutter="20" class="editor-container">
         <!-- 左侧编辑区域 -->
         <el-col :span="el_col_left">
             <div class="editor-wrapper">
@@ -82,6 +82,8 @@ export default {
             isLoading: false, // 按钮加载状态
             show_linenums: false,
             lineWrapping: false,
+            leftFolded: false,
+            rightFolded: false,
         };
     },
     mounted() {
