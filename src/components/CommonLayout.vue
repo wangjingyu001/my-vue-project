@@ -18,6 +18,7 @@
                     <el-menu-item class="menu-item" index="8">HTML格式化</el-menu-item>
                     <el-menu-item class="menu-item" index="9">URL编码/解码</el-menu-item>
                     <el-menu-item class="menu-item" index="10">unicode编码/解码</el-menu-item>
+                    <el-menu-item class="menu-item" index="11">加解密</el-menu-item>
                 </el-menu>
             </el-aside>
 
@@ -59,6 +60,9 @@
                 <div v-if="activeMenu === '10'" class="main-content-son">
                     <UnicodeDecode />
                 </div>
+                <div v-if="activeMenu === '11'" class="main-content-son">
+                    <Encrypt />
+                </div>
                 <footer class="footer">
                     <a href="https://beian.miit.gov.cn/" target="_blank" class="beian-link">京ICP备2024101520号-1</a>
                     <span> | </span>
@@ -83,6 +87,7 @@ import FormatUrl from "./FormatUrl.vue";
 import EncodeDecodeUrl from './EncodeDecodeUrl.vue'
 import UnicodeDecode from "./UnicodeDecode.vue";
 import CurlToRequests from "./CurlToRequests.vue";
+import Encrypt from "./Encrypt.vue";
 
 
 export default {
@@ -96,7 +101,8 @@ export default {
         FormatJs,
         FormatHtml,
         EncodeDecodeUrl,
-        UnicodeDecode
+        UnicodeDecode,
+        Encrypt
     },
     data() {
         return {
