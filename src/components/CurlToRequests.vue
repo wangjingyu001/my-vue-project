@@ -197,9 +197,15 @@ export default {
 
             let data, data_temp, data_str, data_python;
             if (method.toString() == "POST") {
-                data = JSON.parse(result[0].dataArray[0])
+                try {
+                    data = JSON.parse(result[0].dataArray[0])
 
-                data_python = this.trans_object_to_dict(data, 4);
+                    data_python = this.trans_object_to_dict(data, 4);
+                } catch {
+                    data_python = JSON.stringify(result[0].dataArray[0].toString());
+                    headers['content-type'] = 'application/x-www-form-urlencoded';
+                }
+
 
                 if (headers['content-type'] && headers['content-type'].indexOf('application/json') !== -1) {
                     data_temp = `
