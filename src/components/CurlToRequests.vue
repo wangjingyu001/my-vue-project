@@ -63,9 +63,8 @@ import "codemirror/addon/fold/foldgutter.css"
 import 'codemirror/addon/fold/brace-fold';
 import 'codemirror/addon/fold/comment-fold';
 import "codemirror/addon/fold/indent-fold";
-import { supportedArgs } from 'curlconverter/dist/src/generators/python/python.js';
-import { parse } from 'curlconverter/dist/src/parse.js';
 import { ArrowDown } from '@element-plus/icons-vue';
+import { build_requests_code } from "../utils/parse_url.js";
 
 export default {
     name: "curl_to_requests",
@@ -177,81 +176,9 @@ export default {
                 return value;
             }, indent);
         },
-
-        parse_curl(curl_commond) {
-            var result = parse(curl_commond, supportedArgs)
-            let method = result[0].urls[0].method;
-            let base_url = result[0].urls[0].urlWithoutQueryArray;
-            let params = result[0].urls[0].queryDict ? result[0].urls[0].queryDict.reduce((acc, [key, value]) => {
-                acc[key.toString()] = value.toString();
-                return acc;
-            }, {}) : {};
-            let headers = result[0].headers.headers.reduce((acc, [key, value]) => {
-                acc[key.toString()] = value.toString();
-                return acc;
-            }, {});
-            let cookies = result[0].cookies ? result[0].cookies.reduce((acc, [key, value]) => {
-                acc[key.toString()] = value.toString();
-                return acc;
-            }, {}) : {};
-
-            let data, data_temp, data_str, data_python;
-            if (method.toString() == "POST") {
-                try {
-                    data = JSON.parse(result[0].dataArray[0])
-
-                    data_python = this.trans_object_to_dict(data, 4);
-                } catch {
-                    data_python = JSON.stringify(result[0].dataArray[0].toString());
-                    headers['content-type'] = 'application/x-www-form-urlencoded';
-                }
-
-
-                if (headers['content-type'] && headers['content-type'].indexOf('application/json') !== -1) {
-                    data_temp = `
-post_data = ${data_python}
-    `
-                    data_str = `, json=post_data`
-                } else if (headers['content-type'] && headers['content-type'].indexOf('application/x-www-form-urlencoded') !== -1) {
-                    data_temp = `
-post_data = ${data_python}
-    `
-                    data_str = `, data=post_data`
-                } else {
-                    data_temp = `
-post_data = ${data_python}
-    `
-                    data_str = `, data=json.dumps(post_data,separators=(',', ':'))`
-                }
-
-            } else {
-                data_temp = ``;
-                data_str = ``;
-            }
-            let requests_code = `import requests
-import json 
-headers = ${this.deal_headers_cookie(headers, 4)}
-cookies = ${this.trans_object_to_dict(cookies, 4)}
-params = ${this.trans_object_to_dict(params, 4)}
-${data_temp}
-url = "${base_url}"
-
-response = requests.${method.toLowerCase()}(url, params=params, cookies=cookies, headers=headers${data_str}, verify=False)
-print(response.text)
-print(response.status_code)
-
-# from lxml import etree
-# html = etree.HTML(response.text)
-
-    
-    `
-
-            // console.log(requests_code)
-            return requests_code
-        },
         formatcurl(format_str) {
             try {
-                const response = this.parse_curl(format_str);
+                const response = build_requests_code(format_str);
                 this.editor_right.setValue(response);
                 console.log("完成格式化")
                 this.el_col_left = 12;

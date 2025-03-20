@@ -2,6 +2,7 @@ import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import path from "path";
 import topLevelAwait from 'vite-plugin-top-level-await'
+import nodeStdLibBrowser from 'vite-plugin-node-stdlib-browser'; // Or import polyfills from 'vite-plugin-node-polyfills';
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -10,7 +11,8 @@ export default defineConfig({
         // 'process.cwd': '"/"',  // 修改为字符串, // 模拟返回根路径
     },
   plugins: [
-    topLevelAwait(),
+      topLevelAwait(),
+      nodeStdLibBrowser(),
     vue()],
   resolve: {
     alias: {
