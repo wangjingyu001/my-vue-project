@@ -1,5 +1,9 @@
 import { Word, firstShellToken } from "./Word.js";
-import parser from "./Parser.js";
+// import parser from "./Parser.js";
+// import parser from './Parser.js';
+import { get_parser } from "./parser2.js";
+// const  parser  = get_parser();
+
 const BACKSLASHES = /\\./gs;
 function clip(s, maxLength = 30) {
     if (s.length > maxLength) {
@@ -587,6 +591,7 @@ function nameToWord(name, curlCommand, warnings) {
     return nameWord;
 }
 export function tokenize(curlCommand, warnings = []) {
+    const parser = get_parser();
     const ast = parser.parse(curlCommand);
     warnAboutBadNodes(ast, curlCommand, warnings);
     // TODO: pass syntax nodes for each token downstream and use it to

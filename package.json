@@ -24,10 +24,12 @@
     "uglify-js": "^3.19.3",
     "vite-plugin-node-polyfills": "^0.23.0",
     "vite-plugin-top-level-await": "^1.4.4",
-    "vue": "^3.5.13"
+    "vue": "^3.5.13",
+    "web-tree-sitter": "^0.25.3"
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^5.2.1",
+    "node-loader": "^2.1.0",
     "vite": "^6.0.1",
     "vite-plugin-node-stdlib-browser": "^0.2.1"
   }

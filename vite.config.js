@@ -17,10 +17,11 @@ export default defineConfig({
   resolve: {
     alias: {
           "@": path.resolve(__dirname, "src"), // 确保 @ 映射到 src 目录
-        'process': 'process/browser'
+        // 'process': 'process/browser'
     },
   },
-  build: {
+    build: {
+      
       target: 'esnext', // 支持顶层 await
       outDir: `C:/Users/Admin/Desktop/spidertools界面/build`, 
   },
