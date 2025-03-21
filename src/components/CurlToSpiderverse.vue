@@ -63,8 +63,9 @@ import "codemirror/addon/fold/foldgutter.css"
 import 'codemirror/addon/fold/brace-fold';
 import 'codemirror/addon/fold/comment-fold';
 import "codemirror/addon/fold/indent-fold";
-import { build_requests_code } from "../utils/parse_url.js";
+import * as curlconverter from 'curlconverter';
 import { ArrowDown } from '@element-plus/icons-vue';
+import { forIn } from "lodash";
 
 export default {
     name: "curl_to_spiderverse",
@@ -160,7 +161,30 @@ export default {
             this.editor_left.setOption('lineWrapping', this.lineWrapping); // 更新左侧编辑器的自动换行设置
             this.editor_right.setOption('lineWrapping', this.lineWrapping); // 更新右侧编辑器的自动换行设置
         },
+        deal_headers_cookie(headers, indent) {
+            return JSON.stringify(headers, (key, value) => {
+                if (key === 'cookie') return; // 处理 cookie 把cookie 删除
+                return value;
+            }, indent);
+        },
+        addSpacesToLastLine(str) {
+            const lines = str.split('\n');
+            // if (lines[lines.length - 1] === '}') {
+            // lines[lines.length - 1] = '    ' + lines[lines.length - 1];
+            // }
+            forIn(lines, (value, index) => {
+                if (index == 0 && lines[index] == '{') {
+
+                } else {
+                    lines[index] = '    ' + lines[index];
+
+                }
+
+            })curl'co'nü'er
+            return lines.join('\n');
+        },
         trans_object_to_dict(data, indent) {
+
             return JSON.stringify(data, (key, value) => {
                 if (value === false) return 'False_trans_python'; // 处理 false
                 if (value === true) return 'True_trans_python'; // 处理 true
@@ -170,17 +194,78 @@ export default {
                 .replace(/"True_trans_python"/g, "True")
                 .replace(/"None_trans_python"/g, "None");
         },
-        deal_headers_cookie(headers, indent) {
-            return JSON.stringify(headers, (key, value) => {
-                if (key === 'cookie') return; // 处理 cookie 把cookie 删除
-                return value;
-            }, indent);
+
+        build_requests_code(curl_str) {
+            try {
+                const json_string_curl = curlconverter.toJsonString(curl_str);
+                const json_curl = JSON.parse(json_string_curl);
+
+                const url = new URL(json_curl.url);
+                const origin = url.origin;
+                const pathname = url.pathname;
+                const base_url = origin + pathname;
+                const params = Object.fromEntries(url.searchParams);
+
+                const method = json_curl.method;
+                const headers = json_curl.headers;
+                const data = json_curl.data || {};
+                const cookies = json_curl.cookies || {};
+
+                let data_temp, data_str, data_python;
+                data_python = this.addSpacesToLastLine(this.trans_object_to_dict(data, 4));
+
+                if (method == "post") {
+                    if (headers['content-type'] && headers['content-type'].indexOf('application/json') !== -1) {
+                        data_temp = `
+    post_data = ${data_python}
+`
+                        data_str = `, json=post_data`
+                    } else if (headers['content-type'] && headers['content-type'].indexOf('application/x-www-form-urlencoded') !== -1) {
+                        data_temp = `
+    post_data = ${data_python}
+`
+                        data_str = `, data=post_data`
+                    } else {
+                        data_temp = `
+    post_data = ${data_python}
+`
+                        data_str = `, data=json.dumps(post_data,separators=(',', ':'))`
+                    }
+
+                } else {
+                    data_temp = ``;
+                    data_str = ``;
+                }
+                let requests_code = `
+def request_composer(data, runtime_vars):
+    import json
+    from urllib.parse import urlparse, parse_qs, urlencode, urljoin
+    headers = ${this.deal_headers_cookie(headers, 8).slice(0, -1) + '    }'}
+    cookies = ${this.trans_object_to_dict(cookies, 8).slice(0, -1) + '    }'}
+    cookie_str = "; ".join([f"{key}={value}" for key, value in cookies.items()])
+    headers["cookie"] = cookie_str
+    params = ${this.trans_object_to_dict(params, 8).slice(0, -1) + '    }'}
+${data_temp}
+    base_url = "${base_url}"
+    query_string = urlencode(params)
+    url = urljoin(base_url, '?' + query_string)
+     
+    return {'url': url, 'method': '${method}','headers':headers${data_str},'retries':3}
+    
+    `
+                console.log("完成转换")
+
+                return requests_code;
+            } catch (error) {
+                console.error("请求失败:", error);
+                this.editor_right.setValue(error);
+                return
+            }
+
         },
-
-
         formatcurl(format_str) {
             try {
-                const response = build_requests_code(format_str);
+                const response = this.build_requests_code(format_str);
                 this.editor_right.setValue(response);
                 console.log("完成格式化")
                 this.el_col_left = 12;
