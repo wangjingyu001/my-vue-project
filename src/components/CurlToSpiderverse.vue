@@ -180,7 +180,7 @@ export default {
 
                 }
 
-            })curl'co'nü'er
+            })
             return lines.join('\n');
         },
         trans_object_to_dict(data, indent) {
