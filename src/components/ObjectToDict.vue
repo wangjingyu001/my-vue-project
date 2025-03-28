@@ -66,6 +66,8 @@ import "codemirror/addon/fold/foldgutter.css"
 import { ArrowDown, ArrowRight, Loading } from '@element-plus/icons-vue';
 import { ElMessage } from 'element-plus';
 import { objectToDict } from '@/api/api'
+// import VueClipboard from 'vue-clipboard3'
+import clipboard from 'clipboard';
 
 export default {
     name: "object_to_dict",
@@ -86,6 +88,7 @@ export default {
             isLoading: false, // 按钮加载状态
             leftFolded: false,
             rightFolded: false,
+            lines_yingshe: {}
         };
     },
     mounted() {
@@ -162,6 +165,33 @@ export default {
 
 
 `,
+            foldOptions: {
+                widget: (from, to) => {
+                    from.ch -= 1;
+                    to.ch += 1;
+                    let foldedText = this.editor_left.getRange(from, to);
+
+                    try {
+                        let foldedJson = JSON.parse(foldedText);
+                        let itemCount = Object.keys(foldedJson).length;
+
+                        let placeholder = document.createElement("span");
+                        placeholder.className = "fold-placeholder";
+                        const marker = '<span class="CodeMirror-foldmarker">↔</span>';
+                        if (Array.isArray(foldedJson)) {
+                            placeholder.innerHTML = `[${marker}]  ${itemCount} items `;
+                        } else {
+                            placeholder.innerHTML = `{${marker}}  ${itemCount} items `;
+                        }
+                        return placeholder;
+
+                    } catch (e) {
+                        console.error("Failed to parse folded JSON:", e);
+                        return document.createTextNode("...");
+                    }
+                }
+            }
+            ,
 
         });
         this.editor_left.setSize('100%', '100%'); // 设置 CodeMirror 高度为 100% 
@@ -170,8 +200,58 @@ export default {
         this.right_content = "";
 
         this.case_output = `右侧处理后为python dict`
+
+        let currentWidget = null;
+        this.editor_right.on("mousedown", (cm, event) => {
+            // 清除旧组件
+            if (currentWidget) currentWidget.clear();
+
+            const pos = cm.coordsChar({ left: event.clientX, top: event.clientY }, "window");
+            const lineContent = cm.getLine(pos.line);
+            let lineNumber = pos.line + 1; // Codemirror 行号从 0 开始，所以需要 +1
+            const path = this.lines_yingshe[lineNumber - 1];
+            // 判断是否点击在行尾空白区域
+            if (pos.ch >= lineContent.length && path) {
+                currentWidget = this.showInteractiveWidget(cm, path, pos.line);
+            }
+        });
     },
     methods: {
+        showInteractiveWidget(editor, path, line) {
+            let currentWidget = null;
+            // 创建显示容器
+            const widgetNode = document.createElement("div");
+            widgetNode.style = "display:flex; align-items:center; margin-left:1em;";
+
+            // 计算结果
+            const calcResult = path;
+            const resultSpan = document.createElement("span");
+            resultSpan.textContent = `计算结果：${calcResult}`;
+            resultSpan.style.color = "#666";
+
+            // 创建复制按钮
+            const copyBtn = document.createElement("button");
+            copyBtn.textContent = "复制";
+            copyBtn.style.marginLeft = "8px";
+            copyBtn.onmousedown = (e) => {
+                e.preventDefault();  // 阻止默认行为
+                e.stopPropagation(); // 阻止冒泡到编辑器
+            };
+            copyBtn.onclick = () => {
+                navigator.clipboard.writeText(calcResult.toString());
+            };
+
+            // 组装组件
+            widgetNode.appendChild(resultSpan);
+            widgetNode.appendChild(copyBtn);
+
+            // 添加行尾组件
+            currentWidget = editor.addLineWidget(line, widgetNode, {
+                coverGutter: false,
+                noHScroll: true
+            });
+            return currentWidget
+        },
         handleViewCommand(command) {
             switch (command) {
                 case 'leftFull':
@@ -225,6 +305,7 @@ export default {
                 if (response.data.status === 200) {
                     this.editor_left.setValue(response.data.result.object_js);
                     this.editor_right.setValue(response.data.result.dict_py);
+                    this.lines_yingshe = response.data.result.lines_yingshe;
                     console.log("完成格式化")
                 } else {
                     this.editor_right.setValue("请求失败，json不合法，请检查控制台日志或输入的数据。");
