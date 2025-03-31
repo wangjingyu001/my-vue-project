@@ -88,7 +88,8 @@ export default {
             isLoading: false, // 按钮加载状态
             leftFolded: false,
             rightFolded: false,
-            lines_yingshe: {}
+            lines_yingshe: {},
+            response: '', // 接口返回的响应数据，用于显示在右侧编辑器中。可以根据需要进行初始化。
         };
     },
     mounted() {
@@ -217,6 +218,36 @@ export default {
         });
     },
     methods: {
+        getValueByPath(start_lin, path) {
+            const object_js = JSON.parse(this.response.data.result.object_js);
+
+            let current = object_js;
+            const pathArray = JSON.parse(path.path);
+            for (let key of pathArray) {
+
+                current = current[key];
+
+            }
+            if (current && typeof current === 'object') {
+                const firstLineLength = this.editor_right.getLine(start_lin).length;
+                const lastLine = this.editor_right.getLine(path.end_lin);
+                if (lastLine.slice(-1) == ',') {
+                    var lastLineLength = lastLine.length - 1;
+
+                } else { var lastLineLength = lastLine.length; }
+
+                const from = { line: start_lin, ch: firstLineLength - 1 };
+                const to = { line: path.end_lin, ch: lastLineLength };
+                const textRange = this.editor_right.getRange(from, to);
+
+                return textRange;
+            } else if (current === []) { return '[]'; }
+            else if (current === {}) { return '{}'; }
+            else if (current === true) { return 'True'; }
+            else if (current === false) { return 'False'; }
+            else if (current === null) { return 'None'; } else { return current; }
+
+        },
         showInteractiveWidget(editor, path, line) {
             let currentWidget = null;
             // 创建显示容器
@@ -224,14 +255,14 @@ export default {
             widgetNode.style = "display:flex; align-items:center; margin-left:1em;";
 
             // 计算结果
-            const calcResult = path;
+            const calcResult = path.path;
             const resultSpan = document.createElement("span");
-            resultSpan.textContent = `计算结果：${calcResult}`;
+            resultSpan.textContent = `路径：${calcResult}`;
             resultSpan.style.color = "#666";
 
-            // 创建复制按钮
+            // 创建复制路径按钮
             const copyBtn = document.createElement("button");
-            copyBtn.textContent = "复制";
+            copyBtn.textContent = "复制路径";
             copyBtn.style.marginLeft = "8px";
             copyBtn.onmousedown = (e) => {
                 e.preventDefault();  // 阻止默认行为
@@ -240,10 +271,23 @@ export default {
             copyBtn.onclick = () => {
                 navigator.clipboard.writeText(calcResult.toString());
             };
+            // 创建复制值按钮
+
+            const copyBtn_value = document.createElement("button");
+            copyBtn_value.textContent = "复制值";
+            copyBtn_value.style.marginLeft = "8px";
+            copyBtn_value.onmousedown = (e) => {
+                e.preventDefault();  // 阻止默认行为
+                e.stopPropagation(); // 阻止冒泡到编辑器
+            };
+            copyBtn_value.onclick = () => {
+                navigator.clipboard.writeText(this.getValueByPath(line, path));
+            };
 
             // 组装组件
             widgetNode.appendChild(resultSpan);
             widgetNode.appendChild(copyBtn);
+            widgetNode.appendChild(copyBtn_value);
 
             // 添加行尾组件
             currentWidget = editor.addLineWidget(line, widgetNode, {
@@ -301,11 +345,11 @@ export default {
                     format_str = JSON.stringify(JSON.parse(format_str));
                 } catch (e) {
                 }
-                const response = await objectToDict(format_str);
-                if (response.data.status === 200) {
-                    this.editor_left.setValue(response.data.result.object_js);
-                    this.editor_right.setValue(response.data.result.dict_py);
-                    this.lines_yingshe = response.data.result.lines_yingshe;
+                this.response = await objectToDict(format_str);
+                if (this.response.data.status === 200) {
+                    this.editor_left.setValue(this.response.data.result.object_js);
+                    this.editor_right.setValue(this.response.data.result.dict_py);
+                    this.lines_yingshe = this.response.data.result.lines_yingshe;
                     console.log("完成格式化")
                 } else {
                     this.editor_right.setValue("请求失败，json不合法，请检查控制台日志或输入的数据。");
