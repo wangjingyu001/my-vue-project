@@ -31,6 +31,7 @@
             </el-icon>
             执行
         </el-button>
+        <el-checkbox v-model="lineWrapping" label="自动换行" size="small" border />
     </el-row>
     <el-row :gutter="20" class="editor-container">
         <!-- 左侧 JSON 编辑区域 -->
@@ -68,6 +69,17 @@ import { ElMessage } from 'element-plus';
 import { objectToDict } from '@/api/api'
 // import VueClipboard from 'vue-clipboard3'
 import clipboard from 'clipboard';
+import 'codemirror/addon/scroll/annotatescrollbar.js'
+import 'codemirror/addon/search/matchesonscrollbar.js'
+import 'codemirror/addon/search/match-highlighter.js'
+import 'codemirror/addon/search/jump-to-line.js'
+
+import 'codemirror/addon/dialog/dialog.js'
+import 'codemirror/addon/dialog/dialog.css'
+import 'codemirror/addon/search/searchcursor.js'
+import 'codemirror/addon/search/search.js'
+
+
 
 export default {
     name: "object_to_dict",
@@ -89,6 +101,8 @@ export default {
             leftFolded: false,
             rightFolded: false,
             lines_yingshe: {},
+            lineWrapping: false,
+            query: '',
             response: '', // 接口返回的响应数据，用于显示在右侧编辑器中。可以根据需要进行初始化。
         };
     },
@@ -97,6 +111,7 @@ export default {
         this.editor_left = CodeMirror.fromTextArea(this.$refs.editor_left, {
             mode: "application/json",
             foldGutter: true,
+            lineWrapping: this.lineWrapping,
             simplescrollbars: 'simple',
             gutters: ["CodeMirror-linenumbers", "CodeMirror-foldgutter"], // 添加折叠的 gutter
             theme: "monokai",
@@ -134,6 +149,7 @@ export default {
         this.editor_right = CodeMirror.fromTextArea(this.$refs.editor_right, {
             mode: "application/json",
             foldGutter: true,
+            lineWrapping: this.lineWrapping,
             simplescrollbars: 'simple',
             gutters: ["CodeMirror-linenumbers", "CodeMirror-foldgutter"], // 添加折叠的 gutter
             theme: "monokai",
@@ -217,6 +233,13 @@ export default {
             }
         });
     },
+    watch: {
+        lineWrapping(newValue) {
+            // 监听 lineWrapping 的变化，动态更新 CodeMirror 的 lineWrapping 配置
+            this.editor_left.setOption("lineWrapping", newValue);
+            this.editor_right.setOption("lineWrapping", newValue);
+        }
+    },
     methods: {
         getValueByPath(start_lin, path) {
             const object_js = JSON.parse(this.response.data.result.object_js);
@@ -228,7 +251,9 @@ export default {
                 current = current[key];
 
             }
-            if (current && typeof current === 'object') {
+            if (current == []) { return '[]'; }
+            if (current == {}) { return '{}'; }
+            else if (typeof current === 'object') {
                 const firstLineLength = this.editor_right.getLine(start_lin).length;
                 const lastLine = this.editor_right.getLine(path.end_lin);
                 if (lastLine.slice(-1) == ',') {
@@ -241,8 +266,7 @@ export default {
                 const textRange = this.editor_right.getRange(from, to);
 
                 return textRange;
-            } else if (current === []) { return '[]'; }
-            else if (current === {}) { return '{}'; }
+            }
             else if (current === true) { return 'True'; }
             else if (current === false) { return 'False'; }
             else if (current === null) { return 'None'; } else { return current; }
