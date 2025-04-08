@@ -182,7 +182,7 @@ export default {
                 const json_string_curl = curlconverter.toJsonString(curl_str);
                 const json_curl = JSON.parse(json_string_curl);
 
-                const url = new URL(json_curl.url);
+                const url = new URL(json_curl.raw_url);
                 const origin = url.origin;
                 const pathname = url.pathname;
                 const base_url = origin + pathname;
