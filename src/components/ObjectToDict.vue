@@ -36,8 +36,8 @@
     <el-row :gutter="20" class="editor-container">
         <!-- 左侧 JSON 编辑区域 -->
         <el-col :span="el_col_left">
-            <div class="editor-wrapper">
-                <textarea ref="editor_left" placeholder="{case_input}}" class="editor-left"></textarea>
+            <div class="editor-wrapper" id="editor-left">
+                <!-- <textarea ref="editor_left" placeholder="{case_input}}" class="editor-left"></textarea> -->
             </div>
         </el-col>
 
@@ -52,34 +52,29 @@
 </template>
 
 <script>
-import CodeMirror from "codemirror";
-import "codemirror/mode/javascript/javascript";
-import "codemirror/lib/codemirror.css";
-import "codemirror/theme/monokai.css";
-import 'codemirror/addon/scroll/simplescrollbars.css'
-import 'codemirror/addon/scroll/simplescrollbars'
-import "codemirror/addon/fold/foldcode";
-import "codemirror/addon/fold/foldgutter";
-import "codemirror/addon/fold/brace-fold";
-import "codemirror/lib/codemirror.css";
-import 'codemirror/addon/display/placeholder.js'
-import "codemirror/addon/fold/foldgutter.css"
+
 import { ArrowDown, ArrowRight, Loading } from '@element-plus/icons-vue';
 import { ElMessage } from 'element-plus';
 import { objectToDict } from '@/api/api'
 // import VueClipboard from 'vue-clipboard3'
-import clipboard from 'clipboard';
-import 'codemirror/addon/scroll/annotatescrollbar.js'
-import 'codemirror/addon/search/matchesonscrollbar.js'
-import 'codemirror/addon/search/match-highlighter.js'
-import 'codemirror/addon/search/jump-to-line.js'
+// import clipboard from 'clipboard';
+// import 'codemirror/addon/scroll/annotatescrollbar.js'
+// import 'codemirror/addon/search/matchesonscrollbar.js'
+// import 'codemirror/addon/search/match-highlighter.js'
+// import 'codemirror/addon/search/jump-to-line.js'
 
-import 'codemirror/addon/dialog/dialog.js'
-import 'codemirror/addon/dialog/dialog.css'
-import 'codemirror/addon/search/searchcursor.js'
-import 'codemirror/addon/search/search.js'
+// import '../assets/search_dialog/dialog.js'
+// import '../assets/search_dialog/dialog.css'
+// import '../assets/search_dialog/searchcursor.js'
+// import '../assets/search_dialog/search.js'
 
+// import 'codemirror/addon/dialog/dialog.js'
+// import 'codemirror/addon/dialog/dialog.css'
+// import 'codemirror/addon/search/searchcursor.js'
+// import 'codemirror/addon/search/search.js'
 
+import { EditorView, basicSetup } from "codemirror"
+import { javascript } from "@codemirror/lang-javascript"
 
 export default {
     name: "object_to_dict",
@@ -108,43 +103,52 @@ export default {
     },
     mounted() {
         // 初始化 CodeMirror
-        this.editor_left = CodeMirror.fromTextArea(this.$refs.editor_left, {
-            mode: "application/json",
-            foldGutter: true,
-            lineWrapping: this.lineWrapping,
-            simplescrollbars: 'simple',
-            gutters: ["CodeMirror-linenumbers", "CodeMirror-foldgutter"], // 添加折叠的 gutter
-            theme: "monokai",
-            lineNumbers: true,
-            placeholder: ` 
-// 左侧处理后为js object
-        
-{
-    "string": "示例字符串",
-    "number": 123,
-    "boolean": true,
-    "null_value": null,
-    "array": [
-        1,
-        "二",
-        {
-            "key": "三"
-        }
-    ],
-    "object": {
-        "id": 1,
-        "name": "测试对象",
-        "nested": {
-            "field": "嵌套值"
-        }
-    },
-    "special_characters": "<>&\"'\\",
-    "unicode": "中文, English, 🌟"
-}
+        this.editor_left = new EditorView({
+            extensions: [basicSetup, javascript()],
+            parent: document.getElementById("editor-left"),
+            contentHeight: 1000
+        })
+        const editorLeftContainer = document.getElementById("editor-left");
+        editorLeftContainer.style.width = '100%';
+        editorLeftContainer.style.height = '100%';
 
-`,
+        //         this.editor_left = CodeMirror.fromTextArea(this.$refs.editor_left, {
+        //             mode: "application/json",
+        //             foldGutter: true,
+        //             lineWrapping: this.lineWrapping,
+        //             simplescrollbars: 'simple',
+        //             gutters: ["CodeMirror-linenumbers", "CodeMirror-foldgutter"], // 添加折叠的 gutter
+        //             theme: "monokai",
+        //             lineNumbers: true,
+        //             placeholder: ` 
+        // // 左侧处理后为js object
 
-        });
+        // {
+        //     "string": "示例字符串",
+        //     "number": 123,
+        //     "boolean": true,
+        //     "null_value": null,
+        //     "array": [
+        //         1,
+        //         "二",
+        //         {
+        //             "key": "三"
+        //         }
+        //     ],
+        //     "object": {
+        //         "id": 1,
+        //         "name": "测试对象",
+        //         "nested": {
+        //             "field": "嵌套值"
+        //         }
+        //     },
+        //     "special_characters": "<>&\"'\\",
+        //     "unicode": "中文, English, 🌟"
+        // }
+
+        // `,
+
+        //         });
 
         this.editor_right = CodeMirror.fromTextArea(this.$refs.editor_right, {
             mode: "application/json",
@@ -211,8 +215,8 @@ export default {
             ,
 
         });
-        this.editor_left.setSize('100%', '100%'); // 设置 CodeMirror 高度为 100% 
-        this.editor_right.setSize('100%', '100%'); // 设置 CodeMirror 高度为 100% 
+        // this.editor_left.setSize('100%', '100%'); // 设置 CodeMirror 高度为 100% 
+        // this.editor_right.setSize('100%', '100%'); // 设置 CodeMirror 高度为 100% 
         this.left_content = "";
         this.right_content = "";
 
@@ -413,13 +417,17 @@ export default {
 }
 
 /* 添加 CodeMirror 相关样式 */
-:deep(.CodeMirror) {
+:deep(.cm-editor) {
     height: 100% !important;
     max-height: calc(100vh - 75px);
     border: 1px solid #0b4bdf;
     border-radius: 4px;
     font-family: monospace;
     font-size: 14px;
+}
+
+:deep(.cm-editor.cm-focused) {
+    outline: none !important;
 }
 
 
