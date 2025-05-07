@@ -253,10 +253,10 @@ export default {
             }
 
             // 在布局变化后刷新编辑器
-            this.$nextTick(() => {
-                if (this.el_col_left > 0) this.editor_left.refresh();
-                if (this.el_col_right > 0) this.editor_right.refresh();
-            });
+            // this.$nextTick(() => {
+            //     if (this.el_col_left > 0) this.editor_left.refresh();
+            //     if (this.el_col_right > 0) this.editor_right.refresh();
+            // });
         },
         async handleExecute() {
             this.isLoading = true;
@@ -277,18 +277,23 @@ export default {
                     format_str = JSON.stringify(JSON.parse(format_str));
                 } catch (e) {
                 }
-                this.response = await objectToDict(format_str);
+                try {
+                    this.response = await objectToDict(format_str);
+                } catch (e) {
+                    this.editor_right.dispatch({ changes: { from: 0, to: this.editor_right.state.doc.length, insert: "请求接口失败，请检查控制台日志或网络." } });
+                    console.log("完成格式化")
+                }
+
                 if (this.response.data.status === 200) {
-                    this.editor_left.dispatch({ changes: { from: 0, to: this.editor_left.state.doc.length, insert: this.response.data.result.object_js } })
-                    // this.editor_left.setValue(this.response.data.result.object_js);
-                    // this.editor_right.setValue(this.response.data.result.dict_py);
-                    // this.lines_yingshe = this.response.data.result.lines_yingshe;
+                    this.editor_left.dispatch({ changes: { from: 0, to: this.editor_left.state.doc.length, insert: this.response.data.result.object_js } });
+                    this.editor_right.dispatch({ changes: { from: 0, to: this.editor_right.state.doc.length, insert: this.response.data.result.dict_py } });
+                    this.lines_yingshe = this.response.data.result.lines_yingshe;
                     console.log("完成格式化")
                 } else {
-                    this.editor_right.setValue("请求失败，json不合法，请检查控制台日志或输入的数据。");
+                    this.editor_right.dispatch({ changes: { from: 0, to: this.editor_right.state.doc.length, insert: "格式化失败,json不合法,请检查控制台日志或输入的数据." } });
                     console.log("完成格式化")
                     ElMessage({
-                        message: '请求失败，json不合法，请检查控制台日志或输入的数据。',
+                        message: '请求失败,json不合法,请检查控制台日志或输入的数据.',
                         type: 'error',
                         duration: 3000
                     });
