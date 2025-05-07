@@ -37,14 +37,12 @@
         <!-- 左侧 JSON 编辑区域 -->
         <el-col :span="el_col_left">
             <div class="editor-wrapper" id="editor-left">
-                <!-- <textarea ref="editor_left" placeholder="{case_input}}" class="editor-left"></textarea> -->
             </div>
         </el-col>
 
         <!-- 右侧 JSON 编辑区域 -->
         <el-col :span="el_col_right">
-            <div class="editor-wrapper">
-                <textarea ref="editor_right" :placeholder="case_output" class="editor-right"></textarea>
+            <div class="editor-wrapper" id="editor-right">
             </div>
         </el-col>
 
@@ -56,24 +54,9 @@
 import { ArrowDown, ArrowRight, Loading } from '@element-plus/icons-vue';
 import { ElMessage } from 'element-plus';
 import { objectToDict } from '@/api/api'
-// import VueClipboard from 'vue-clipboard3'
-// import clipboard from 'clipboard';
-// import 'codemirror/addon/scroll/annotatescrollbar.js'
-// import 'codemirror/addon/search/matchesonscrollbar.js'
-// import 'codemirror/addon/search/match-highlighter.js'
-// import 'codemirror/addon/search/jump-to-line.js'
-
-// import '../assets/search_dialog/dialog.js'
-// import '../assets/search_dialog/dialog.css'
-// import '../assets/search_dialog/searchcursor.js'
-// import '../assets/search_dialog/search.js'
-
-// import 'codemirror/addon/dialog/dialog.js'
-// import 'codemirror/addon/dialog/dialog.css'
-// import 'codemirror/addon/search/searchcursor.js'
-// import 'codemirror/addon/search/search.js'
 
 import { EditorView, basicSetup } from "codemirror"
+import { EditorState, Compartment } from "@codemirror/state"
 import { javascript } from "@codemirror/lang-javascript"
 
 export default {
@@ -96,7 +79,8 @@ export default {
             leftFolded: false,
             rightFolded: false,
             lines_yingshe: {},
-            lineWrapping: false,
+            lineWrapping: false, // 默认关闭换行
+            lineWrappingComp: new Compartment(), // 创建 Compartment 实例
             query: '',
             response: '', // 接口返回的响应数据，用于显示在右侧编辑器中。可以根据需要进行初始化。
         };
@@ -104,144 +88,64 @@ export default {
     mounted() {
         // 初始化 CodeMirror
         this.editor_left = new EditorView({
-            extensions: [basicSetup, javascript()],
+            extensions: [
+                basicSetup,
+                javascript(),
+                this.lineWrappingComp.of(this.lineWrapping ? EditorView.lineWrapping : []) // 动态管理换行扩展
+            ],
             parent: document.getElementById("editor-left"),
             contentHeight: 1000
         })
+
         const editorLeftContainer = document.getElementById("editor-left");
         editorLeftContainer.style.width = '100%';
         editorLeftContainer.style.height = '100%';
 
-        //         this.editor_left = CodeMirror.fromTextArea(this.$refs.editor_left, {
-        //             mode: "application/json",
-        //             foldGutter: true,
-        //             lineWrapping: this.lineWrapping,
-        //             simplescrollbars: 'simple',
-        //             gutters: ["CodeMirror-linenumbers", "CodeMirror-foldgutter"], // 添加折叠的 gutter
-        //             theme: "monokai",
-        //             lineNumbers: true,
-        //             placeholder: ` 
-        // // 左侧处理后为js object
-
-        // {
-        //     "string": "示例字符串",
-        //     "number": 123,
-        //     "boolean": true,
-        //     "null_value": null,
-        //     "array": [
-        //         1,
-        //         "二",
-        //         {
-        //             "key": "三"
-        //         }
-        //     ],
-        //     "object": {
-        //         "id": 1,
-        //         "name": "测试对象",
-        //         "nested": {
-        //             "field": "嵌套值"
-        //         }
-        //     },
-        //     "special_characters": "<>&\"'\\",
-        //     "unicode": "中文, English, 🌟"
-        // }
-
-        // `,
-
-        //         });
-
-        this.editor_right = CodeMirror.fromTextArea(this.$refs.editor_right, {
-            mode: "application/json",
-            foldGutter: true,
-            lineWrapping: this.lineWrapping,
-            simplescrollbars: 'simple',
-            gutters: ["CodeMirror-linenumbers", "CodeMirror-foldgutter"], // 添加折叠的 gutter
-            theme: "monokai",
-            lineNumbers: true,
-            placeholder: ` 
-// 右侧处理后为python dict 
-        
-{
-    "string": "示例字符串",
-    "number": 123,
-    "boolean": True,
-    "null_value": None,
-    "array": [
-        1,
-        "二",
-        {
-            "key": "三"
-        }
-    ],
-    "object": {
-        "id": 1,
-        "name": "测试对象",
-        "nested": {
-            "field": "嵌套值"
-        }
-    },
-    "special_characters": "<>&\"'\\",
-    "unicode": "中文, English, 🌟"
-}
 
 
-`,
-            foldOptions: {
-                widget: (from, to) => {
-                    from.ch -= 1;
-                    to.ch += 1;
-                    let foldedText = this.editor_left.getRange(from, to);
+        this.editor_right = new EditorView({
+            extensions: [
+                basicSetup,
+                javascript(),
+                this.lineWrappingComp.of(this.lineWrapping ? EditorView.lineWrapping : []) // 动态管理换行扩展
+            ],
+            parent: document.getElementById("editor-right"),
+            contentHeight: 1000
+        })
+        const editorRightContainer = document.getElementById("editor-right");
+        editorRightContainer.style.width = '100%';
+        editorRightContainer.style.height = '100%';
 
-                    try {
-                        let foldedJson = JSON.parse(foldedText);
-                        let itemCount = Object.keys(foldedJson).length;
 
-                        let placeholder = document.createElement("span");
-                        placeholder.className = "fold-placeholder";
-                        const marker = '<span class="CodeMirror-foldmarker">↔</span>';
-                        if (Array.isArray(foldedJson)) {
-                            placeholder.innerHTML = `[${marker}]  ${itemCount} items `;
-                        } else {
-                            placeholder.innerHTML = `{${marker}}  ${itemCount} items `;
-                        }
-                        return placeholder;
+        // this.left_content = "";
+        // this.right_content = "";
 
-                    } catch (e) {
-                        console.error("Failed to parse folded JSON:", e);
-                        return document.createTextNode("...");
-                    }
-                }
-            }
-            ,
+        // this.case_output = `右侧处理后为python dict`
 
-        });
-        // this.editor_left.setSize('100%', '100%'); // 设置 CodeMirror 高度为 100% 
-        // this.editor_right.setSize('100%', '100%'); // 设置 CodeMirror 高度为 100% 
-        this.left_content = "";
-        this.right_content = "";
+        // let currentWidget = null;
+        // this.editor_right.on("mousedown", (cm, event) => {
+        //     // 清除旧组件
+        //     if (currentWidget) currentWidget.clear();
 
-        this.case_output = `右侧处理后为python dict`
-
-        let currentWidget = null;
-        this.editor_right.on("mousedown", (cm, event) => {
-            // 清除旧组件
-            if (currentWidget) currentWidget.clear();
-
-            const pos = cm.coordsChar({ left: event.clientX, top: event.clientY }, "window");
-            const lineContent = cm.getLine(pos.line);
-            let lineNumber = pos.line + 1; // Codemirror 行号从 0 开始，所以需要 +1
-            const path = this.lines_yingshe[lineNumber - 1];
-            // 判断是否点击在行尾空白区域
-            if (pos.ch >= lineContent.length && path) {
-                currentWidget = this.showInteractiveWidget(cm, path, pos.line);
-            }
-        });
+        //     const pos = cm.coordsChar({ left: event.clientX, top: event.clientY }, "window");
+        //     const lineContent = cm.getLine(pos.line);
+        //     let lineNumber = pos.line + 1; // Codemirror 行号从 0 开始，所以需要 +1
+        //     const path = this.lines_yingshe[lineNumber - 1];
+        //     // 判断是否点击在行尾空白区域
+        //     if (pos.ch >= lineContent.length && path) {
+        //         currentWidget = this.showInteractiveWidget(cm, path, pos.line);
+        //     }
+        // });
     },
     watch: {
         lineWrapping(newValue) {
-            // 监听 lineWrapping 的变化，动态更新 CodeMirror 的 lineWrapping 配置
-            this.editor_left.setOption("lineWrapping", newValue);
-            this.editor_right.setOption("lineWrapping", newValue);
+            // 动态更新换行配置
+            this.editor_left.dispatch({
+                effects: this.lineWrappingComp.reconfigure(newValue ? EditorView.lineWrapping : [])
+            });
+            this.editor_right.dispatch({
+                effects: this.lineWrappingComp.reconfigure(newValue ? EditorView.lineWrapping : [])
+            });
         }
     },
     methods: {
@@ -367,7 +271,7 @@ export default {
             }
         },
         async fetchData() {
-            let format_str = this.editor_left.getValue();
+            let format_str = this.editor_left.state.doc.toString();
             try {
                 try {
                     format_str = JSON.stringify(JSON.parse(format_str));
@@ -375,9 +279,10 @@ export default {
                 }
                 this.response = await objectToDict(format_str);
                 if (this.response.data.status === 200) {
-                    this.editor_left.setValue(this.response.data.result.object_js);
-                    this.editor_right.setValue(this.response.data.result.dict_py);
-                    this.lines_yingshe = this.response.data.result.lines_yingshe;
+                    this.editor_left.dispatch({ changes: { from: 0, to: this.editor_left.state.doc.length, insert: this.response.data.result.object_js } })
+                    // this.editor_left.setValue(this.response.data.result.object_js);
+                    // this.editor_right.setValue(this.response.data.result.dict_py);
+                    // this.lines_yingshe = this.response.data.result.lines_yingshe;
                     console.log("完成格式化")
                 } else {
                     this.editor_right.setValue("请求失败，json不合法，请检查控制台日志或输入的数据。");
@@ -408,6 +313,7 @@ export default {
 <style scoped>
 .editor-container {
     height: 100%;
+    width: 100%;
     margin: 0;
 }
 
