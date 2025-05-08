@@ -57,6 +57,7 @@ import { objectToDict } from '@/api/api'
 
 import { EditorView, basicSetup } from "codemirror"
 import { EditorState, Compartment } from "@codemirror/state"
+import { Decoration, StateEffect } from "@codemirror/view" // 添加这行
 import { javascript } from "@codemirror/lang-javascript"
 
 export default {
@@ -107,7 +108,28 @@ export default {
             extensions: [
                 basicSetup,
                 javascript(),
-                this.lineWrappingComp.of(this.lineWrapping ? EditorView.lineWrapping : []) // 动态管理换行扩展
+                this.lineWrappingComp.of(this.lineWrapping ? EditorView.lineWrapping : []), // 动态管理换行扩展
+                EditorView.domEventHandlers({
+                    mousedown: (event, view) => {
+                        const pos = view.posAtCoords({ x: event.clientX, y: event.clientY });
+                        if (pos !== null) {
+                            const line = view.state.doc.lineAt(pos);
+                            const isAtEnd = pos === line.to; // 判断光标是否在行尾
+                            if (isAtEnd) {
+                                console.log("鼠标在行尾");
+                                const lineNumber = line.number; // 获取当前行号
+                                const path = this.lines_yingshe[lineNumber - 1]; // 获取路径信息
+                                if (path) {
+                                    this.showInteractiveWidget(view, path, lineNumber - 1); // 显示交互组件
+                                }
+                                // 在这里添加你的逻辑
+                            }
+                        } else {
+                            console.log("鼠标不在行尾");
+
+                        }
+                    }
+                })
             ],
             parent: document.getElementById("editor-right"),
             contentHeight: 1000
@@ -115,6 +137,7 @@ export default {
         const editorRightContainer = document.getElementById("editor-right");
         editorRightContainer.style.width = '100%';
         editorRightContainer.style.height = '100%';
+
 
 
         // this.left_content = "";
@@ -181,15 +204,17 @@ export default {
 
         },
         showInteractiveWidget(editor, path, line) {
-            let currentWidget = null;
             // 创建显示容器
             const widgetNode = document.createElement("div");
             widgetNode.style = "display:flex; align-items:center; margin-left:1em;";
 
-            // 计算结果
-            const calcResult = path.path;
+            // 格式化路径为 ['data', 'feed', 'item'] 格式
+            const pathArray = JSON.parse(path.path);
+            const formattedPath = JSON.stringify(pathArray, null, 2).replace(/"/g, "'");
+
+            // 显示路径
             const resultSpan = document.createElement("span");
-            resultSpan.textContent = `路径：${calcResult}`;
+            resultSpan.textContent = `路径：${formattedPath}`;
             resultSpan.style.color = "#666";
 
             // 创建复制路径按钮
@@ -201,10 +226,10 @@ export default {
                 e.stopPropagation(); // 阻止冒泡到编辑器
             };
             copyBtn.onclick = () => {
-                navigator.clipboard.writeText(calcResult.toString());
+                navigator.clipboard.writeText(formattedPath);
             };
-            // 创建复制值按钮
 
+            // 创建复制值按钮
             const copyBtn_value = document.createElement("button");
             copyBtn_value.textContent = "复制值";
             copyBtn_value.style.marginLeft = "8px";
@@ -221,12 +246,18 @@ export default {
             widgetNode.appendChild(copyBtn);
             widgetNode.appendChild(copyBtn_value);
 
-            // 添加行尾组件
-            currentWidget = editor.addLineWidget(line, widgetNode, {
-                coverGutter: false,
-                noHScroll: true
+            // 使用 decorations 添加行尾组件
+            const decoration = Decoration.widget({
+                widget: widgetNode,
+                side: 1, // 1 表示在行尾显示
             });
-            return currentWidget
+
+            const decorations = Decoration.set([decoration.range(line)]);
+
+            // 更新编辑器状态
+            editor.dispatch({
+                effects: StateEffect.appendConfig.of([EditorView.decorations.of(decorations)])
+            });
         },
         handleViewCommand(command) {
             switch (command) {
