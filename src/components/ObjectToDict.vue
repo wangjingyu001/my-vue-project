@@ -54,11 +54,29 @@
 import { ArrowDown, ArrowRight, Loading } from '@element-plus/icons-vue';
 import { ElMessage } from 'element-plus';
 import { objectToDict } from '@/api/api'
+import { EditorState, Compartment } from "@codemirror/state"
+import { Decoration, WidgetType } from "@codemirror/view" // 添加这行
+
 
 import { EditorView, basicSetup } from "codemirror"
-import { EditorState, Compartment } from "@codemirror/state"
-import { Decoration, StateEffect } from "@codemirror/view" // 添加这行
+import { StateEffect, StateField } from "@codemirror/state";
 import { javascript } from "@codemirror/lang-javascript"
+
+
+// 定义 widget 装饰器的状态字段
+const widgetDecorations = StateField.define({
+    create() {
+        return Decoration.none;
+    },
+    update(decorations, tr) {
+        // 当文档变化时，重新映射装饰器
+        return decorations.map(tr.changes);
+    },
+    provide: (f) => EditorView.decorations.from(f),
+});
+
+// 清除 widget 的效果
+const clearWidgetEffect = StateEffect.define();
 
 export default {
     name: "object_to_dict",
@@ -138,27 +156,6 @@ export default {
         editorRightContainer.style.width = '100%';
         editorRightContainer.style.height = '100%';
 
-
-
-        // this.left_content = "";
-        // this.right_content = "";
-
-        // this.case_output = `右侧处理后为python dict`
-
-        // let currentWidget = null;
-        // this.editor_right.on("mousedown", (cm, event) => {
-        //     // 清除旧组件
-        //     if (currentWidget) currentWidget.clear();
-
-        //     const pos = cm.coordsChar({ left: event.clientX, top: event.clientY }, "window");
-        //     const lineContent = cm.getLine(pos.line);
-        //     let lineNumber = pos.line + 1; // Codemirror 行号从 0 开始，所以需要 +1
-        //     const path = this.lines_yingshe[lineNumber - 1];
-        //     // 判断是否点击在行尾空白区域
-        //     if (pos.ch >= lineContent.length && path) {
-        //         currentWidget = this.showInteractiveWidget(cm, path, pos.line);
-        //     }
-        // });
     },
     watch: {
         lineWrapping(newValue) {
@@ -203,14 +200,21 @@ export default {
             else if (current === null) { return 'None'; } else { return current; }
 
         },
+        // 显示交互式 widget 的函数
         showInteractiveWidget(editor, path, line) {
-            // 创建显示容器
+
             const widgetNode = document.createElement("div");
-            widgetNode.style = "display:flex; align-items:center; margin-left:1em;";
+            widgetNode.style.cssText = "display: flex; align-items: center; margin-left: 1em;";
 
             // 格式化路径为 ['data', 'feed', 'item'] 格式
-            const pathArray = JSON.parse(path.path);
-            const formattedPath = JSON.stringify(pathArray, null, 2).replace(/"/g, "'");
+            let formattedPath = "";
+            try {
+                const pathArray = JSON.parse(path.path);
+                formattedPath = JSON.stringify(pathArray, null, 2).replace(/"/g, "'");
+            } catch (e) {
+                console.error("路径解析错误:", e);
+                return;
+            }
 
             // 显示路径
             const resultSpan = document.createElement("span");
@@ -222,41 +226,56 @@ export default {
             copyBtn.textContent = "复制路径";
             copyBtn.style.marginLeft = "8px";
             copyBtn.onmousedown = (e) => {
-                e.preventDefault();  // 阻止默认行为
-                e.stopPropagation(); // 阻止冒泡到编辑器
+                e.preventDefault();
+                e.stopPropagation();
             };
             copyBtn.onclick = () => {
-                navigator.clipboard.writeText(formattedPath);
+                navigator.clipboard.writeText(formattedPath).then(() => {
+                    console.log("路径已复制");
+                });
             };
 
             // 创建复制值按钮
-            const copyBtn_value = document.createElement("button");
-            copyBtn_value.textContent = "复制值";
-            copyBtn_value.style.marginLeft = "8px";
-            copyBtn_value.onmousedown = (e) => {
-                e.preventDefault();  // 阻止默认行为
-                e.stopPropagation(); // 阻止冒泡到编辑器
+            const copyBtnValue = document.createElement("button");
+            copyBtnValue.textContent = "复制值";
+            copyBtnValue.style.marginLeft = "8px";
+            copyBtnValue.onmousedown = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
             };
-            copyBtn_value.onclick = () => {
-                navigator.clipboard.writeText(this.getValueByPath(line, path));
+            copyBtnValue.onclick = () => {
+                const value = getValueByPath(line, path); // 假设你有此函数
+                navigator.clipboard.writeText(value).then(() => {
+                    console.log("值已复制");
+                });
             };
 
             // 组装组件
             widgetNode.appendChild(resultSpan);
             widgetNode.appendChild(copyBtn);
-            widgetNode.appendChild(copyBtn_value);
+            widgetNode.appendChild(copyBtnValue);
 
-            // 使用 decorations 添加行尾组件
+            // 创建 widget 装饰器
             const decoration = Decoration.widget({
-                widget: widgetNode,
-                side: 1, // 1 表示在行尾显示
+                widget: new class extends WidgetType {
+                    toDOM() {
+                        return widgetNode;
+                    }
+                }(),
+                side: 1 // 行尾显示
             });
 
-            const decorations = Decoration.set([decoration.range(line)]);
+            // 计算行尾位置
+            const linePos = editor.state.doc.line(line + 1).to;
+
+            // 创建装饰器集合
+            const decorations = Decoration.set([decoration.range(linePos)]);
 
             // 更新编辑器状态
             editor.dispatch({
-                effects: StateEffect.appendConfig.of([EditorView.decorations.of(decorations)])
+                effects: StateEffect.appendConfig.of([
+                    widgetDecorations.init(() => decorations)
+                ])
             });
         },
         handleViewCommand(command) {
