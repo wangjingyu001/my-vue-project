@@ -55,7 +55,11 @@ import { ArrowDown, ArrowRight, Loading } from '@element-plus/icons-vue';
 import { ElMessage } from 'element-plus';
 import { objectToDict } from '@/api/api'
 import { EditorState, Compartment } from "@codemirror/state"
+<<<<<<< HEAD
 import { Decoration, WidgetType } from "@codemirror/view" // 添加这行
+=======
+import { Decoration,WidgetType } from "@codemirror/view" // 添加这行
+>>>>>>> 80895cdbd1df5886451c631c6b8a07d8d31d5b6a
 
 
 import { EditorView, basicSetup } from "codemirror"
@@ -65,6 +69,7 @@ import { javascript } from "@codemirror/lang-javascript"
 
 // 定义 widget 装饰器的状态字段
 const widgetDecorations = StateField.define({
+<<<<<<< HEAD
     create() {
         return Decoration.none;
     },
@@ -73,6 +78,16 @@ const widgetDecorations = StateField.define({
         return decorations.map(tr.changes);
     },
     provide: (f) => EditorView.decorations.from(f),
+=======
+  create() {
+    return Decoration.none;
+  },
+  update(decorations, tr) {
+    // 当文档变化时，重新映射装饰器
+    return decorations.map(tr.changes);
+  },
+  provide: (f) => EditorView.decorations.from(f),
+>>>>>>> 80895cdbd1df5886451c631c6b8a07d8d31d5b6a
 });
 
 // 清除 widget 的效果
@@ -201,6 +216,7 @@ export default {
 
         },
         // 显示交互式 widget 的函数
+<<<<<<< HEAD
         showInteractiveWidget(editor, path, line) {
 
             const widgetNode = document.createElement("div");
@@ -215,12 +231,29 @@ export default {
                 console.error("路径解析错误:", e);
                 return;
             }
+=======
+     showInteractiveWidget(editor, path, line) {
+    
+    const widgetNode = document.createElement("div");
+    widgetNode.style.cssText = "display: flex; align-items: center; margin-left: 1em;";
 
-            // 显示路径
-            const resultSpan = document.createElement("span");
-            resultSpan.textContent = `路径：${formattedPath}`;
-            resultSpan.style.color = "#666";
+    // 格式化路径为 ['data', 'feed', 'item'] 格式
+    let formattedPath = "";
+    try {
+        const pathArray = JSON.parse(path.path);
+        formattedPath = JSON.stringify(pathArray, null, 2).replace(/"/g, "'");
+    } catch (e) {
+        console.error("路径解析错误:", e);
+        return;
+    }
+>>>>>>> 80895cdbd1df5886451c631c6b8a07d8d31d5b6a
 
+    // 显示路径
+    const resultSpan = document.createElement("span");
+    resultSpan.textContent = `路径：${formattedPath}`;
+    resultSpan.style.color = "#666";
+
+<<<<<<< HEAD
             // 创建复制路径按钮
             const copyBtn = document.createElement("button");
             copyBtn.textContent = "复制路径";
@@ -278,6 +311,65 @@ export default {
                 ])
             });
         },
+=======
+    // 创建复制路径按钮
+    const copyBtn = document.createElement("button");
+    copyBtn.textContent = "复制路径";
+    copyBtn.style.marginLeft = "8px";
+    copyBtn.onmousedown = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+    };
+    copyBtn.onclick = () => {
+        navigator.clipboard.writeText(formattedPath).then(() => {
+            console.log("路径已复制");
+        });
+    };
+
+    // 创建复制值按钮
+    const copyBtnValue = document.createElement("button");
+    copyBtnValue.textContent = "复制值";
+    copyBtnValue.style.marginLeft = "8px";
+    copyBtnValue.onmousedown = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+    };
+    copyBtnValue.onclick = () => {
+        const value = getValueByPath(line, path); // 假设你有此函数
+        navigator.clipboard.writeText(value).then(() => {
+            console.log("值已复制");
+        });
+    };
+
+    // 组装组件
+    widgetNode.appendChild(resultSpan);
+    widgetNode.appendChild(copyBtn);
+    widgetNode.appendChild(copyBtnValue);
+
+    // 创建 widget 装饰器
+    const decoration = Decoration.widget({
+        widget: new class extends WidgetType {
+            toDOM() {
+                return widgetNode;
+            }
+        }(),
+        side: 1 // 行尾显示
+    });
+
+    // 计算行尾位置
+    const linePos = editor.state.doc.line(line + 1).to;
+
+    // 创建装饰器集合
+    const decorations = Decoration.set([decoration.range(linePos)]);
+
+    // 更新编辑器状态
+    editor.dispatch({
+        effects: StateEffect.appendConfig.of([
+            widgetDecorations.init(() => decorations)
+        ])
+    });
+},
+>>>>>>> 80895cdbd1df5886451c631c6b8a07d8d31d5b6a
         handleViewCommand(command) {
             switch (command) {
                 case 'leftFull':

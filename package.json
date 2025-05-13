@@ -13,7 +13,6 @@
     "axios": "^1.7.8",
     "clipboard": "^2.0.11",
     "codemirror": "^6.0.1",
-    "codemirror-revisedsearch": "^1.0.12",
     "element-plus": "^2.8.8",
     "esbuild": "^0.24.2",
     "html-minifier": "^4.0.0",
@@ -32,9 +31,9 @@
     "web-tree-sitter": "^0.25.3"
   },
   "devDependencies": {
-    "@vitejs/plugin-vue": "^5.2.1",
+    "@vitejs/plugin-vue": "^4.2.3",
     "node-loader": "^2.1.0",
-    "vite": "^6.0.1",
+    "vite": "^4.5.14",
     "vite-plugin-node-stdlib-browser": "^0.2.1"
   }
 }
