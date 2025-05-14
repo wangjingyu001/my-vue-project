@@ -55,11 +55,7 @@ import { ArrowDown, ArrowRight, Loading } from '@element-plus/icons-vue';
 import { ElMessage } from 'element-plus';
 import { objectToDict } from '@/api/api'
 import { EditorState, Compartment } from "@codemirror/state"
-<<<<<<< HEAD
 import { Decoration, WidgetType } from "@codemirror/view" // 添加这行
-=======
-import { Decoration,WidgetType } from "@codemirror/view" // 添加这行
->>>>>>> 80895cdbd1df5886451c631c6b8a07d8d31d5b6a
 
 
 import { EditorView, basicSetup } from "codemirror"
@@ -67,31 +63,35 @@ import { StateEffect, StateField } from "@codemirror/state";
 import { javascript } from "@codemirror/lang-javascript"
 
 
+// 定义添加 widget 的状态效果
+const addWidgetEffect = StateEffect.define();
+// 定义清除 widget 的状态效果
+const clearWidgetsEffect = StateEffect.define();
 // 定义 widget 装饰器的状态字段
 const widgetDecorations = StateField.define({
-<<<<<<< HEAD
     create() {
         return Decoration.none;
     },
     update(decorations, tr) {
-        // 当文档变化时，重新映射装饰器
+        // 清除所有装饰器
+        for (let effect of tr.effects) {
+            if (effect.is(clearWidgetsEffect)) {
+                return Decoration.none;
+            }
+        }
+
+        // 添加新装饰器
+        for (let effect of tr.effects) {
+            if (effect.is(addWidgetEffect)) {
+                return effect.value;
+            }
+        }
+
+        // 保持现有装饰器并映射到新状态
         return decorations.map(tr.changes);
     },
     provide: (f) => EditorView.decorations.from(f),
-=======
-  create() {
-    return Decoration.none;
-  },
-  update(decorations, tr) {
-    // 当文档变化时，重新映射装饰器
-    return decorations.map(tr.changes);
-  },
-  provide: (f) => EditorView.decorations.from(f),
->>>>>>> 80895cdbd1df5886451c631c6b8a07d8d31d5b6a
 });
-
-// 清除 widget 的效果
-const clearWidgetEffect = StateEffect.define();
 
 export default {
     name: "object_to_dict",
@@ -115,6 +115,7 @@ export default {
             lines_yingshe: {},
             lineWrapping: false, // 默认关闭换行
             lineWrappingComp: new Compartment(), // 创建 Compartment 实例
+            currentWidgetLine: null, // 跟踪当前显示小部件的行号
             query: '',
             response: '', // 接口返回的响应数据，用于显示在右侧编辑器中。可以根据需要进行初始化。
         };
@@ -142,18 +143,29 @@ export default {
                 basicSetup,
                 javascript(),
                 this.lineWrappingComp.of(this.lineWrapping ? EditorView.lineWrapping : []), // 动态管理换行扩展
+                widgetDecorations, // 添加装饰器状态字段
                 EditorView.domEventHandlers({
                     mousedown: (event, view) => {
                         const pos = view.posAtCoords({ x: event.clientX, y: event.clientY });
                         if (pos !== null) {
                             const line = view.state.doc.lineAt(pos);
-                            const isAtEnd = pos === line.to; // 判断光标是否在行尾
+                            const lineNumber = line.number;
+                            const isAtEnd = pos === line.to;
+                            // 如果不是在之前点击的行尾，清除现有小部件
+                            if (this.currentWidgetLine !== lineNumber || !isAtEnd) {
+                                this.clearWidgets(view);
+                            }
                             if (isAtEnd) {
                                 console.log("鼠标在行尾");
                                 const lineNumber = line.number; // 获取当前行号
                                 const path = this.lines_yingshe[lineNumber - 1]; // 获取路径信息
+                                const path_reverse = this.lines_yingshe_reverse[lineNumber - 1]; // 获取路径信息
+
                                 if (path) {
                                     this.showInteractiveWidget(view, path, lineNumber - 1); // 显示交互组件
+                                }
+                                if (path_reverse) {
+                                    this.showInteractiveWidget(view, path_reverse, lineNumber - 1); // 显示交互组件
                                 }
                                 // 在这里添加你的逻辑
                             }
@@ -184,6 +196,13 @@ export default {
         }
     },
     methods: {
+        // 清除所有小部件
+        clearWidgets(editor) {
+            editor.dispatch({
+                effects: clearWidgetsEffect.of(null)
+            });
+            this.currentWidgetLine = null;
+        },
         getValueByPath(start_lin, path) {
             const object_js = JSON.parse(this.response.data.result.object_js);
 
@@ -194,31 +213,37 @@ export default {
                 current = current[key];
 
             }
-            if (current == []) { return '[]'; }
-            if (current == {}) { return '{}'; }
+            if (Array.isArray(current) && current.length === 0) { return '[]'; }
+            if (current !== null && typeof current === "object" && !Array.isArray(current) && Object.keys(current).length === 0) { return '{}'; }
+            else if (current === true) { return 'True'; }
+            else if (current === false) { return 'False'; }
+            else if (current === null) { return 'None'; }
             else if (typeof current === 'object') {
-                const firstLineLength = this.editor_right.getLine(start_lin).length;
-                const lastLine = this.editor_right.getLine(path.end_lin);
-                if (lastLine.slice(-1) == ',') {
+                const firstLineLength = this.editor_right.state.doc.line(start_lin).length;
+                const lastLine = this.editor_right.state.doc.line(path.end_lin);
+                if (lastLine.text.slice(-1) == ',') {
                     var lastLineLength = lastLine.length - 1;
 
                 } else { var lastLineLength = lastLine.length; }
 
-                const from = { line: start_lin, ch: firstLineLength - 1 };
-                const to = { line: path.end_lin, ch: lastLineLength };
-                const textRange = this.editor_right.getRange(from, to);
+                const from = this.editor_right.state.doc.line(start_lin).from;
+                const to = this.editor_right.state.doc.line(path.end_lin).to;
+                const textRange = this.editor_right.state.doc.sliceString(from, to);
 
                 return textRange;
             }
-            else if (current === true) { return 'True'; }
-            else if (current === false) { return 'False'; }
-            else if (current === null) { return 'None'; } else { return current; }
+            else if (current === '') { return '""'; }
+            else { return current; }
 
         },
         // 显示交互式 widget 的函数
-<<<<<<< HEAD
         showInteractiveWidget(editor, path, line) {
-
+            if (this.currentDecoration) {
+                editor.dispatch({
+                    effects: StateEffect.appendConfig.of([EditorView.decorations.of(Decoration.none)])
+                });
+                this.currentDecoration = null;
+            }
             const widgetNode = document.createElement("div");
             widgetNode.style.cssText = "display: flex; align-items: center; margin-left: 1em;";
 
@@ -226,34 +251,17 @@ export default {
             let formattedPath = "";
             try {
                 const pathArray = JSON.parse(path.path);
-                formattedPath = JSON.stringify(pathArray, null, 2).replace(/"/g, "'");
+                formattedPath = path.path.toString();
             } catch (e) {
                 console.error("路径解析错误:", e);
                 return;
             }
-=======
-     showInteractiveWidget(editor, path, line) {
-    
-    const widgetNode = document.createElement("div");
-    widgetNode.style.cssText = "display: flex; align-items: center; margin-left: 1em;";
 
-    // 格式化路径为 ['data', 'feed', 'item'] 格式
-    let formattedPath = "";
-    try {
-        const pathArray = JSON.parse(path.path);
-        formattedPath = JSON.stringify(pathArray, null, 2).replace(/"/g, "'");
-    } catch (e) {
-        console.error("路径解析错误:", e);
-        return;
-    }
->>>>>>> 80895cdbd1df5886451c631c6b8a07d8d31d5b6a
+            // 显示路径
+            const resultSpan = document.createElement("span");
+            resultSpan.textContent = `路径：${formattedPath}`;
+            resultSpan.style.color = "#666";
 
-    // 显示路径
-    const resultSpan = document.createElement("span");
-    resultSpan.textContent = `路径：${formattedPath}`;
-    resultSpan.style.color = "#666";
-
-<<<<<<< HEAD
             // 创建复制路径按钮
             const copyBtn = document.createElement("button");
             copyBtn.textContent = "复制路径";
@@ -277,7 +285,7 @@ export default {
                 e.stopPropagation();
             };
             copyBtnValue.onclick = () => {
-                const value = getValueByPath(line, path); // 假设你有此函数
+                const value = this.getValueByPath(line, path); // 假设你有此函数
                 navigator.clipboard.writeText(value).then(() => {
                     console.log("值已复制");
                 });
@@ -306,70 +314,9 @@ export default {
 
             // 更新编辑器状态
             editor.dispatch({
-                effects: StateEffect.appendConfig.of([
-                    widgetDecorations.init(() => decorations)
-                ])
+                effects: addWidgetEffect.of(decorations)
             });
         },
-=======
-    // 创建复制路径按钮
-    const copyBtn = document.createElement("button");
-    copyBtn.textContent = "复制路径";
-    copyBtn.style.marginLeft = "8px";
-    copyBtn.onmousedown = (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-    };
-    copyBtn.onclick = () => {
-        navigator.clipboard.writeText(formattedPath).then(() => {
-            console.log("路径已复制");
-        });
-    };
-
-    // 创建复制值按钮
-    const copyBtnValue = document.createElement("button");
-    copyBtnValue.textContent = "复制值";
-    copyBtnValue.style.marginLeft = "8px";
-    copyBtnValue.onmousedown = (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-    };
-    copyBtnValue.onclick = () => {
-        const value = getValueByPath(line, path); // 假设你有此函数
-        navigator.clipboard.writeText(value).then(() => {
-            console.log("值已复制");
-        });
-    };
-
-    // 组装组件
-    widgetNode.appendChild(resultSpan);
-    widgetNode.appendChild(copyBtn);
-    widgetNode.appendChild(copyBtnValue);
-
-    // 创建 widget 装饰器
-    const decoration = Decoration.widget({
-        widget: new class extends WidgetType {
-            toDOM() {
-                return widgetNode;
-            }
-        }(),
-        side: 1 // 行尾显示
-    });
-
-    // 计算行尾位置
-    const linePos = editor.state.doc.line(line + 1).to;
-
-    // 创建装饰器集合
-    const decorations = Decoration.set([decoration.range(linePos)]);
-
-    // 更新编辑器状态
-    editor.dispatch({
-        effects: StateEffect.appendConfig.of([
-            widgetDecorations.init(() => decorations)
-        ])
-    });
-},
->>>>>>> 80895cdbd1df5886451c631c6b8a07d8d31d5b6a
         handleViewCommand(command) {
             switch (command) {
                 case 'leftFull':
@@ -430,6 +377,7 @@ export default {
                     this.editor_left.dispatch({ changes: { from: 0, to: this.editor_left.state.doc.length, insert: this.response.data.result.object_js } });
                     this.editor_right.dispatch({ changes: { from: 0, to: this.editor_right.state.doc.length, insert: this.response.data.result.dict_py } });
                     this.lines_yingshe = this.response.data.result.lines_yingshe;
+                    this.lines_yingshe_reverse = this.response.data.result.lines_yingshe_reverse;
                     console.log("完成格式化")
                 } else {
                     this.editor_right.dispatch({ changes: { from: 0, to: this.editor_right.state.doc.length, insert: "格式化失败,json不合法,请检查控制台日志或输入的数据." } });
