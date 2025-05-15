@@ -165,7 +165,7 @@ export default {
                                     this.showInteractiveWidget(view, path, lineNumber - 1); // 显示交互组件
                                 }
                                 if (path_reverse) {
-                                    this.showInteractiveWidget(view, path_reverse, lineNumber - 1); // 显示交互组件
+                                    this.showInteractiveWidget_reverse(view, path_reverse, lineNumber - 1); // 显示交互组件
                                 }
                                 // 在这里添加你的逻辑
                             }
@@ -219,16 +219,49 @@ export default {
             else if (current === false) { return 'False'; }
             else if (current === null) { return 'None'; }
             else if (typeof current === 'object') {
-                const firstLineLength = this.editor_right.state.doc.line(start_lin).length;
-                const lastLine = this.editor_right.state.doc.line(path.end_lin);
+                const firstLineLength = this.editor_right.state.doc.line(start_lin + 1).length;
+                const lastLine = this.editor_right.state.doc.line(path.end_lin + 1);
                 if (lastLine.text.slice(-1) == ',') {
-                    var lastLineLength = lastLine.length - 1;
+                    var lastLineLength = lastLine.to - 1;
 
-                } else { var lastLineLength = lastLine.length; }
+                } else { var lastLineLength = lastLine.to; }
 
-                const from = this.editor_right.state.doc.line(start_lin).from;
-                const to = this.editor_right.state.doc.line(path.end_lin).to;
-                const textRange = this.editor_right.state.doc.sliceString(from, to);
+                const from = this.editor_right.state.doc.line(start_lin).from + firstLineLength;
+                // const to = this.editor_right.state.doc.line(path.end_lin).to;
+                const textRange = this.editor_right.state.doc.sliceString(from, lastLineLength);
+
+                return textRange;
+            }
+            else if (current === '') { return '""'; }
+            else { return current; }
+
+        },
+        getValueByReversePath(start_lin, path) {
+            const object_js = JSON.parse(this.response.data.result.object_js);
+
+            let current = object_js;
+            const pathArray = JSON.parse(path.path);
+            for (let key of pathArray) {
+
+                current = current[key];
+
+            }
+            if (Array.isArray(current) && current.length === 0) { return '[]'; }
+            if (current !== null && typeof current === "object" && !Array.isArray(current) && Object.keys(current).length === 0) { return '{}'; }
+            else if (current === true) { return 'True'; }
+            else if (current === false) { return 'False'; }
+            else if (current === null) { return 'None'; }
+            else if (typeof current === 'object') {
+                const firstLineLength = this.editor_right.state.doc.line(path.end_lin + 1).length;
+                const lastLine = this.editor_right.state.doc.line(start_lin + 1);
+                if (lastLine.text.slice(-1) == ',') {
+                    var lastLineLength = lastLine.to - 1;
+
+                } else { var lastLineLength = lastLine.to; }
+
+                const from = this.editor_right.state.doc.line(path.end_lin + 1).from + firstLineLength - 1
+                // const to = this.editor_right.state.doc.line(path.end_lin).to;
+                const textRange = this.editor_right.state.doc.sliceString(from, lastLineLength);
 
                 return textRange;
             }
@@ -250,7 +283,6 @@ export default {
             // 格式化路径为 ['data', 'feed', 'item'] 格式
             let formattedPath = "";
             try {
-                const pathArray = JSON.parse(path.path);
                 formattedPath = path.path.toString();
             } catch (e) {
                 console.error("路径解析错误:", e);
@@ -286,6 +318,85 @@ export default {
             };
             copyBtnValue.onclick = () => {
                 const value = this.getValueByPath(line, path); // 假设你有此函数
+                navigator.clipboard.writeText(value).then(() => {
+                    console.log("值已复制");
+                });
+            };
+
+            // 组装组件
+            widgetNode.appendChild(resultSpan);
+            widgetNode.appendChild(copyBtn);
+            widgetNode.appendChild(copyBtnValue);
+
+            // 创建 widget 装饰器
+            const decoration = Decoration.widget({
+                widget: new class extends WidgetType {
+                    toDOM() {
+                        return widgetNode;
+                    }
+                }(),
+                side: 1 // 行尾显示
+            });
+
+            // 计算行尾位置
+            const linePos = editor.state.doc.line(line + 1).to;
+
+            // 创建装饰器集合
+            const decorations = Decoration.set([decoration.range(linePos)]);
+
+            // 更新编辑器状态
+            editor.dispatch({
+                effects: addWidgetEffect.of(decorations)
+            });
+        },
+        showInteractiveWidget_reverse(editor, path, line) {
+            if (this.currentDecoration) {
+                editor.dispatch({
+                    effects: StateEffect.appendConfig.of([EditorView.decorations.of(Decoration.none)])
+                });
+                this.currentDecoration = null;
+            }
+            const widgetNode = document.createElement("div");
+            widgetNode.style.cssText = "display: flex; align-items: center; margin-left: 1em;";
+
+            // 格式化路径为 ['data', 'feed', 'item'] 格式
+            let formattedPath = "";
+            try {
+                formattedPath = path.path.toString();
+            } catch (e) {
+                console.error("路径解析错误:", e);
+                return;
+            }
+
+            // 显示路径
+            const resultSpan = document.createElement("span");
+            resultSpan.textContent = `路径：${formattedPath}`;
+            resultSpan.style.color = "#666";
+
+            // 创建复制路径按钮
+            const copyBtn = document.createElement("button");
+            copyBtn.textContent = "复制路径";
+            copyBtn.style.marginLeft = "8px";
+            copyBtn.onmousedown = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+            };
+            copyBtn.onclick = () => {
+                navigator.clipboard.writeText(formattedPath).then(() => {
+                    console.log("路径已复制");
+                });
+            };
+
+            // 创建复制值按钮
+            const copyBtnValue = document.createElement("button");
+            copyBtnValue.textContent = "复制值";
+            copyBtnValue.style.marginLeft = "8px";
+            copyBtnValue.onmousedown = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+            };
+            copyBtnValue.onclick = () => {
+                const value = this.getValueByReversePath(line, path); // 假设你有此函数
                 navigator.clipboard.writeText(value).then(() => {
                     console.log("值已复制");
                 });
