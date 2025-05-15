@@ -158,14 +158,14 @@ export default {
                             if (isAtEnd) {
                                 console.log("鼠标在行尾");
                                 const lineNumber = line.number; // 获取当前行号
-                                const path = this.lines_yingshe[lineNumber - 1]; // 获取路径信息
-                                const path_reverse = this.lines_yingshe_reverse[lineNumber - 1]; // 获取路径信息
+                                const path = this.lines_yingshe[lineNumber]; // 获取路径信息
+                                const path_reverse = this.lines_yingshe_reverse[lineNumber]; // 获取路径信息
 
                                 if (path) {
-                                    this.showInteractiveWidget(view, path, lineNumber - 1); // 显示交互组件
+                                    this.showInteractiveWidget(view, path.path,lineNumber,path.end_line); // 显示交互组件
                                 }
                                 if (path_reverse) {
-                                    this.showInteractiveWidget_reverse(view, path_reverse, lineNumber - 1); // 显示交互组件
+                                    this.showInteractiveWidget(view, path_reverse.path,path_reverse.start_line, lineNumber); // 显示交互组件
                                 }
                                 // 在这里添加你的逻辑
                             }
@@ -203,11 +203,11 @@ export default {
             });
             this.currentWidgetLine = null;
         },
-        getValueByPath(start_lin, path) {
+        getValueByPath(path,start_line,end_line ) {
             const object_js = JSON.parse(this.response.data.result.object_js);
 
             let current = object_js;
-            const pathArray = JSON.parse(path.path);
+            const pathArray = JSON.parse(path);
             for (let key of pathArray) {
 
                 current = current[key];
@@ -219,49 +219,22 @@ export default {
             else if (current === false) { return 'False'; }
             else if (current === null) { return 'None'; }
             else if (typeof current === 'object') {
-                const firstLineLength = this.editor_right.state.doc.line(start_lin + 1).length;
-                const lastLine = this.editor_right.state.doc.line(path.end_lin + 1);
-                if (lastLine.text.slice(-1) == ',') {
-                    var lastLineLength = lastLine.to - 1;
+                const first_line = this.editor_right.state.doc.line(start_line);
+                const last_line = this.editor_right.state.doc.line(end_line);
+                if (last_line.text.slice(-1) == ',') {
+                    var to = last_line.to - 1;
 
-                } else { var lastLineLength = lastLine.to; }
+                } else { var to = last_line.to; }
+                if (first_line.text.trim() == '{') {
+                    var from = first_line.from+first_line.length-1;
 
-                const from = this.editor_right.state.doc.line(start_lin).from + firstLineLength;
+                } else { 
+                    var from = first_line.from+first_line.length-1;
+                }
+
+                // const from = this.editor_right.state.doc.line(start_line).from;
                 // const to = this.editor_right.state.doc.line(path.end_lin).to;
-                const textRange = this.editor_right.state.doc.sliceString(from, lastLineLength);
-
-                return textRange;
-            }
-            else if (current === '') { return '""'; }
-            else { return current; }
-
-        },
-        getValueByReversePath(start_lin, path) {
-            const object_js = JSON.parse(this.response.data.result.object_js);
-
-            let current = object_js;
-            const pathArray = JSON.parse(path.path);
-            for (let key of pathArray) {
-
-                current = current[key];
-
-            }
-            if (Array.isArray(current) && current.length === 0) { return '[]'; }
-            if (current !== null && typeof current === "object" && !Array.isArray(current) && Object.keys(current).length === 0) { return '{}'; }
-            else if (current === true) { return 'True'; }
-            else if (current === false) { return 'False'; }
-            else if (current === null) { return 'None'; }
-            else if (typeof current === 'object') {
-                const firstLineLength = this.editor_right.state.doc.line(path.end_lin + 1).length;
-                const lastLine = this.editor_right.state.doc.line(start_lin + 1);
-                if (lastLine.text.slice(-1) == ',') {
-                    var lastLineLength = lastLine.to - 1;
-
-                } else { var lastLineLength = lastLine.to; }
-
-                const from = this.editor_right.state.doc.line(path.end_lin + 1).from + firstLineLength - 1
-                // const to = this.editor_right.state.doc.line(path.end_lin).to;
-                const textRange = this.editor_right.state.doc.sliceString(from, lastLineLength);
+                const textRange = this.editor_right.state.doc.sliceString(from, to);
 
                 return textRange;
             }
@@ -270,7 +243,7 @@ export default {
 
         },
         // 显示交互式 widget 的函数
-        showInteractiveWidget(editor, path, line) {
+        showInteractiveWidget(editor, path, start_line, end_line) {
             if (this.currentDecoration) {
                 editor.dispatch({
                     effects: StateEffect.appendConfig.of([EditorView.decorations.of(Decoration.none)])
@@ -283,7 +256,7 @@ export default {
             // 格式化路径为 ['data', 'feed', 'item'] 格式
             let formattedPath = "";
             try {
-                formattedPath = path.path.toString();
+                formattedPath = path;
             } catch (e) {
                 console.error("路径解析错误:", e);
                 return;
@@ -317,7 +290,7 @@ export default {
                 e.stopPropagation();
             };
             copyBtnValue.onclick = () => {
-                const value = this.getValueByPath(line, path); // 假设你有此函数
+                const value = this.getValueByPath(path,start_line,end_line); // 假设你有此函数
                 navigator.clipboard.writeText(value).then(() => {
                     console.log("值已复制");
                 });
@@ -339,86 +312,7 @@ export default {
             });
 
             // 计算行尾位置
-            const linePos = editor.state.doc.line(line + 1).to;
-
-            // 创建装饰器集合
-            const decorations = Decoration.set([decoration.range(linePos)]);
-
-            // 更新编辑器状态
-            editor.dispatch({
-                effects: addWidgetEffect.of(decorations)
-            });
-        },
-        showInteractiveWidget_reverse(editor, path, line) {
-            if (this.currentDecoration) {
-                editor.dispatch({
-                    effects: StateEffect.appendConfig.of([EditorView.decorations.of(Decoration.none)])
-                });
-                this.currentDecoration = null;
-            }
-            const widgetNode = document.createElement("div");
-            widgetNode.style.cssText = "display: flex; align-items: center; margin-left: 1em;";
-
-            // 格式化路径为 ['data', 'feed', 'item'] 格式
-            let formattedPath = "";
-            try {
-                formattedPath = path.path.toString();
-            } catch (e) {
-                console.error("路径解析错误:", e);
-                return;
-            }
-
-            // 显示路径
-            const resultSpan = document.createElement("span");
-            resultSpan.textContent = `路径：${formattedPath}`;
-            resultSpan.style.color = "#666";
-
-            // 创建复制路径按钮
-            const copyBtn = document.createElement("button");
-            copyBtn.textContent = "复制路径";
-            copyBtn.style.marginLeft = "8px";
-            copyBtn.onmousedown = (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-            };
-            copyBtn.onclick = () => {
-                navigator.clipboard.writeText(formattedPath).then(() => {
-                    console.log("路径已复制");
-                });
-            };
-
-            // 创建复制值按钮
-            const copyBtnValue = document.createElement("button");
-            copyBtnValue.textContent = "复制值";
-            copyBtnValue.style.marginLeft = "8px";
-            copyBtnValue.onmousedown = (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-            };
-            copyBtnValue.onclick = () => {
-                const value = this.getValueByReversePath(line, path); // 假设你有此函数
-                navigator.clipboard.writeText(value).then(() => {
-                    console.log("值已复制");
-                });
-            };
-
-            // 组装组件
-            widgetNode.appendChild(resultSpan);
-            widgetNode.appendChild(copyBtn);
-            widgetNode.appendChild(copyBtnValue);
-
-            // 创建 widget 装饰器
-            const decoration = Decoration.widget({
-                widget: new class extends WidgetType {
-                    toDOM() {
-                        return widgetNode;
-                    }
-                }(),
-                side: 1 // 行尾显示
-            });
-
-            // 计算行尾位置
-            const linePos = editor.state.doc.line(line + 1).to;
+            const linePos = editor.state.doc.line(start_line).to;
 
             // 创建装饰器集合
             const decorations = Decoration.set([decoration.range(linePos)]);
