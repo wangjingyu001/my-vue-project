@@ -61,7 +61,9 @@ import { Decoration, WidgetType } from "@codemirror/view" // 添加这行
 import { EditorView, basicSetup } from "codemirror"
 import { StateEffect, StateField } from "@codemirror/state";
 import { javascript } from "@codemirror/lang-javascript"
-
+import { foldAll, unfoldAll,foldable,foldEffect , foldGutter, codeFolding ,foldCode,syntaxTree} from "@codemirror/language";
+import { json } from "@codemirror/lang-json";
+import { python } from "@codemirror/lang-python";
 
 // 定义添加 widget 的状态效果
 const addWidgetEffect = StateEffect.define();
@@ -125,7 +127,8 @@ export default {
         this.editor_left = new EditorView({
             extensions: [
                 basicSetup,
-                javascript(),
+                json(),
+                codeFolding(),
                 this.lineWrappingComp.of(this.lineWrapping ? EditorView.lineWrapping : []) // 动态管理换行扩展
             ],
             parent: document.getElementById("editor-left"),
@@ -141,7 +144,7 @@ export default {
         this.editor_right = new EditorView({
             extensions: [
                 basicSetup,
-                javascript(),
+                python(),
                 this.lineWrappingComp.of(this.lineWrapping ? EditorView.lineWrapping : []), // 动态管理换行扩展
                 widgetDecorations, // 添加装饰器状态字段
                 EditorView.domEventHandlers({
@@ -203,6 +206,24 @@ export default {
             });
             this.currentWidgetLine = null;
         },
+        foldAllRecursive(view) {
+  const state = view.state;
+
+  // Traverse the syntax tree and collect all foldable ranges
+  const foldRanges= [];
+  syntaxTree(state).iterate({
+    enter(node) {
+      const isFoldable = foldable(state, node.from, node.to)
+      if (isFoldable) {
+        foldRanges.push({ from: isFoldable.from, to: isFoldable.to });
+      }
+    }
+  });
+
+  view.dispatch({
+    effects: foldRanges.map(range => foldEffect.of({ from: range.from, to: range.to }))
+  });
+},
         getValueByPath(path,start_line,end_line ) {
             const object_js = JSON.parse(this.response.data.result.object_js);
 
@@ -339,11 +360,19 @@ export default {
                     break;
                 case 'foldLeft':
                     this.leftFolded = !this.leftFolded;
-                    this.editor_left.execCommand(this.leftFolded ? 'foldAll' : 'unfoldAll');
+                    if (this.leftFolded) {
+                        this.foldAllRecursive(this.editor_left);
+                    } else {
+                        unfoldAll(this.editor_left);
+                    }
                     break;
                 case 'foldRight':
                     this.rightFolded = !this.rightFolded;
-                    this.editor_right.execCommand(this.rightFolded ? 'foldAll' : 'unfoldAll');
+                    if (this.rightFolded) {
+                        foldAll(this.editor_right);
+                    } else {
+                        unfoldAll(this.editor_right);
+                    }
                     break;
             }
 
