@@ -251,7 +251,8 @@ export default {
                 this.currentDecoration = null;
             }
             const widgetNode = document.createElement("div");
-            widgetNode.style.cssText = "display: flex; align-items: center; margin-left: 1em;";
+            // widgetNode.style.cssText = "display: flex; align-items: center; margin-left: 1em;";
+            widgetNode.style.cssText = "display: inline-flex; align-items: center; margin-left: 1em; vertical-align: middle;"
 
             // 格式化路径为 ['data', 'feed', 'item'] 格式
             let formattedPath = "";
