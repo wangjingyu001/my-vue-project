@@ -50,7 +50,6 @@ import { EditorView, basicSetup } from "codemirror"
 import { codeFolding,foldAll, unfoldAll,syntaxTree,foldable,foldEffect   } from "@codemirror/language";
 import { python } from "@codemirror/lang-python";
 
-import * as curlconverter from 'curlconverter';
 import { ArrowDown } from '@element-plus/icons-vue';
 
 export default {
