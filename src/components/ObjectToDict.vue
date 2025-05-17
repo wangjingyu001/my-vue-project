@@ -138,8 +138,6 @@ export default {
         editorLeftContainer.style.width = '100%';
         editorLeftContainer.style.height = '100%';
 
-
-
         this.editor_right = new EditorView({
             extensions: [
                 basicSetup,
@@ -369,12 +367,7 @@ export default {
                 case 'foldRight':
                     this.rightFolded = !this.rightFolded;
                     if (this.rightFolded) {
-    //                         this.editor_right.dispatch({
-    // effects: EditorView.scrollIntoView(this.editor_right.state.doc.length)
-    // });
-                    foldAll(this.editor_right)
-                        
-                        // this.foldAllRecursive(this.editor_right);
+                    this.foldAllRecursive(this.editor_right);
                     } else {
                         unfoldAll(this.editor_right);
                     }
@@ -403,8 +396,9 @@ export default {
             let format_str = this.editor_left.state.doc.toString();
             try {
                 try {
-                    format_str = JSON.stringify(JSON.parse(format_str));
+                    format_str = JSON.stringify(JSON.parse(JSON.parse(format_str)));
                 } catch (e) {
+                    format_str = JSON.stringify(JSON.parse(format_str));
                 }
                 try {
                     this.response = await objectToDict(format_str);
@@ -416,16 +410,29 @@ export default {
                 if (this.response.data.status === 200) {
                     this.editor_left.dispatch({ changes: { from: 0, to: this.editor_left.state.doc.length, insert: this.response.data.result.object_js } });
                     this.editor_right.dispatch({ changes: { from: 0, to: this.editor_right.state.doc.length, insert: this.response.data.result.dict_py } });
+                    this.editor_right.dispatch({
+                        effects: EditorView.scrollIntoView(this.editor_right.state.doc.length)
+                    });
+                    this.editor_left.dispatch({
+                        effects: EditorView.scrollIntoView(this.editor_left.state.doc.length)
+                    });
+                    await new Promise(r => setTimeout(r, 200))
+    // this.foldAllRecursive(this.editor_right);
+  
+    //                     unfoldAll(this.editor_right);
+                    this.editor_right.dispatch({
+                        effects: EditorView.scrollIntoView(0)
+                    });
+                    this.editor_left.dispatch({
+                        effects: EditorView.scrollIntoView(0)
+                    });
+
+
                     this.lines_yingshe = this.response.data.result.lines_yingshe;
                     this.lines_yingshe_reverse = this.response.data.result.lines_yingshe_reverse;
                     this.editor_right.requestMeasure()
-                    this.editor_right.dispatch({
-                effects: EditorView.scrollIntoView(0, { y: "start" })
-            });
-            // 延迟刷新，确保渲染完成
-            setTimeout(() => {
-                this.editor_right.requestMeasure();
-            }, 1000);
+                    
+            
 
                     console.log("完成格式化")
                 } else {
@@ -441,7 +448,8 @@ export default {
 
             } catch (error) {
                 console.error("请求失败:", error);
-                this.editor_right.setValue("请求失败，请检查控制台日志或输入的数据。", error);
+                this.editor_right.dispatch({ changes: { from: 0, to: this.editor_right.state.doc.length, insert: "格式化失败,json不合法,请检查控制台日志或输入的数据." } });
+                    
                 ElMessage({
                     message: '请求失败，请检查控制台日志或输入的数据。',
                     type: 'error',
