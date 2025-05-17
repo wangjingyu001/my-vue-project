@@ -25,21 +25,18 @@
         </el-dropdown>
         <!-- 执行按钮 -->
         <el-checkbox v-model="lineWrapping" label="自动换行" size="small" border />
-        <el-checkbox v-model="show_linenums" label="显示行号" size="small" border />
-    </el-row>
+        </el-row>
 
     <el-row :gutter="20" class="editor-container">
         <!-- 左侧编辑区域 -->
         <el-col :span="el_col_left">
-            <div class="editor-wrapper">
-                <textarea v-model="left_content" ref="editor_left" class="editor-left"></textarea>
+            <div class="editor-wrapper" id="editor-left">
             </div>
         </el-col>
 
         <!-- 右侧编辑区域 -->
         <el-col :span="el_col_right">
-            <div class="editor-wrapper">
-                <textarea v-model="right_content" ref="editor_right" class="editor-right"></textarea>
+            <div class="editor-wrapper" id="editor-right">
             </div>
         </el-col>
 
@@ -47,24 +44,15 @@
 </template>
 
 <script>
-import CodeMirror from "codemirror";
-import "codemirror/mode/javascript/javascript";
-import 'codemirror/mode/python/python';
-import 'codemirror/mode/shell/shell.js';
-import "codemirror/lib/codemirror.css";
-import "codemirror/theme/monokai.css";
-import 'codemirror/addon/scroll/simplescrollbars.css'
-import 'codemirror/addon/scroll/simplescrollbars'
-import "codemirror/addon/fold/foldcode";
-import "codemirror/addon/fold/foldgutter";
-import "codemirror/addon/fold/brace-fold";
-import "codemirror/lib/codemirror.css";
-import "codemirror/addon/fold/foldgutter.css"
-import 'codemirror/addon/fold/brace-fold';
-import 'codemirror/addon/fold/comment-fold';
-import "codemirror/addon/fold/indent-fold";
-import { ArrowDown } from '@element-plus/icons-vue';
+import { EditorState, Compartment, StateEffect, StateField  } from "@codemirror/state"
+import { Decoration, WidgetType } from "@codemirror/view" // 添加这行
+import { EditorView, basicSetup } from "codemirror"
+import { codeFolding,foldAll, unfoldAll,syntaxTree,foldable,foldEffect   } from "@codemirror/language";
+import { python } from "@codemirror/lang-python";
+
 import * as curlconverter from 'curlconverter';
+import { ArrowDown } from '@element-plus/icons-vue';
+import { forIn } from "lodash";
 
 
 export default {
@@ -80,53 +68,85 @@ export default {
             el_col_left: 12,
             el_col_right: 12,
             isLoading: false, // 按钮加载状态
-            show_linenums: false,
             lineWrapping: false,
             leftFolded: false,
             rightFolded: false,
+            lineWrapping: false, // 默认关闭换行
+            lineWrappingComp: new Compartment(), // 创建 Compartment 实例
         };
     },
     mounted() {
         // 初始化 CodeMirror
-        this.editor_left = CodeMirror.fromTextArea(this.$refs.editor_left, {
-            mode: "shell",
-            foldGutter: true,
-            simplescrollbars: 'simple',
-            gutters: ["CodeMirror-linenumbers", "CodeMirror-foldgutter"], // 添加折叠的 gutter
-            // theme: "monokai",
-            lineWrapping: this.lineWrapping,
-            lineNumbers: this.show_linenums,
-        });
-        this.editor_right = CodeMirror.fromTextArea(this.$refs.editor_right, {
-            mode: "python",
-            foldGutter: true,
-            simplescrollbars: 'simple',
-            gutters: ["CodeMirror-linenumbers", "CodeMirror-foldgutter"], // 添加折叠的 gutter
-            // theme: "monokai",
-            lineWrapping: this.lineWrapping,
-            lineNumbers: this.show_linenums,
-        });
-        this.editor_left.setSize('100%', '100%'); // 设置 CodeMirror 高度为 100% 
-        this.editor_right.setSize('100%', '100%'); // 设置 CodeMirror 高度为 100% 
-        this.editor_left.on('change', (instance, changeObj) => {
-            this.formatcurl(instance.getValue());
-        });
-        this.left_content = "";
-        this.right_content = "";
+        this.editor_left = new EditorView({
+            extensions: [
+                basicSetup,
+                python(),
+                codeFolding(), // 启用折叠功能
+                EditorView.updateListener.of((update) => {
+                    if (update.docChanged) {
+                    // 文档内容发生了变化
+                    console.log("内容已变更！");
+                    // console.log("变更前内容：", update.startState.doc.toString());
+                    // console.log("变更后内容：", update.state.doc.toString());
+                    this.formatcurl();
+                    
+                    }
+                }),
+                this.lineWrappingComp.of(this.lineWrapping ? EditorView.lineWrapping : []) // 动态管理换行扩展
+            ],
+            parent: document.getElementById("editor-left"),
+            contentHeight: 1000
+        })
+
+        const editorLeftContainer = document.getElementById("editor-left");
+        editorLeftContainer.style.width = '100%';
+        editorLeftContainer.style.height = '100%';
+
+        this.editor_right = new EditorView({
+            extensions: [
+                basicSetup,
+                python(),
+                codeFolding(),
+                this.lineWrappingComp.of(this.lineWrapping ? EditorView.lineWrapping : []), // 动态管理换行扩展
+            ],
+            parent: document.getElementById("editor-right"),
+            contentHeight: 1000
+        })
+        const editorRightContainer = document.getElementById("editor-right");
+        editorRightContainer.style.width = '100%';
+        editorRightContainer.style.height = '100%';
+
     },
     watch: {
-        show_linenums(newValue) {
-            // 监听 show_linenums 的变化，动态更新 CodeMirror 的 lineNumbers 配置
-            this.editor_left.setOption("lineNumbers", newValue);
-            this.editor_right.setOption("lineNumbers", newValue);
-        },
         lineWrapping(newValue) {
-            // 监听 lineWrapping 的变化，动态更新 CodeMirror 的 lineWrapping 配置
-            this.editor_left.setOption("lineWrapping", newValue);
-            this.editor_right.setOption("lineWrapping", newValue);
+            // 动态更新换行配置
+            this.editor_left.dispatch({
+                effects: this.lineWrappingComp.reconfigure(newValue ? EditorView.lineWrapping : [])
+            });
+            this.editor_right.dispatch({
+                effects: this.lineWrappingComp.reconfigure(newValue ? EditorView.lineWrapping : [])
+            });
         }
     },
     methods: {
+        foldAllRecursive(view) {
+            const state = view.state;
+
+            // Traverse the syntax tree and collect all foldable ranges
+            const foldRanges= [];
+            syntaxTree(state).iterate({
+                enter(node) {
+                const isFoldable = foldable(state, node.from, node.to)
+                if (isFoldable) {
+                    foldRanges.push({ from: isFoldable.from, to: isFoldable.to });
+                }
+                }
+            });
+
+            view.dispatch({
+                effects: foldRanges.map(range => foldEffect.of({ from: range.from, to: range.to }))
+            });
+        },
         handleViewCommand(command) {
             switch (command) {
                 case 'leftFull':
@@ -143,23 +163,21 @@ export default {
                     break;
                 case 'foldLeft':
                     this.leftFolded = !this.leftFolded;
-                    this.editor_left.execCommand(this.leftFolded ? 'foldAll' : 'unfoldAll');
+                    if (this.leftFolded) {
+                        this.foldAllRecursive(this.editor_left);
+                    } else {
+                        unfoldAll(this.editor_left);
+                    };
                     break;
                 case 'foldRight':
                     this.rightFolded = !this.rightFolded;
-                    this.editor_right.execCommand(this.rightFolded ? 'foldAll' : 'unfoldAll');
+                    if (this.rightFolded) {
+                        this.foldAllRecursive(this.editor_right);
+                    } else {
+                        unfoldAll(this.editor_right);
+                    };
                     break;
             }
-
-            // 在布局变化后刷新编辑器
-            this.$nextTick(() => {
-                if (this.el_col_left > 0) this.editor_left.refresh();
-                if (this.el_col_right > 0) this.editor_right.refresh();
-            });
-        },
-        toggleLineWrapping() {
-            this.editor_left.setOption('lineWrapping', this.lineWrapping); // 更新左侧编辑器的自动换行设置
-            this.editor_right.setOption('lineWrapping', this.lineWrapping); // 更新右侧编辑器的自动换行设置
         },
         trans_object_to_dict(data, indent) {
             return JSON.stringify(data, (key, value) => {
@@ -190,7 +208,14 @@ export default {
 
                 const method = json_curl.method;
                 const headers = json_curl.headers;
-                const data = json_curl.data || {};
+                var data = json_curl.data || {};
+                try {
+                    if (data) {
+                        data = JSON.parse(data);
+                    } 
+                }catch (error) {
+                    console.log("不是json格式的数据")
+                }
                 const cookies = json_curl.cookies || {};
 
                 let data_temp, data_str, data_python;
@@ -245,10 +270,13 @@ print(response.status_code)
             }
 
         },
-        formatcurl(format_str) {
+        formatcurl() {
+            const format_str = this.editor_left.state.doc.toString();
+            
             try {
                 const response = this.build_requests_code(format_str);
-                this.editor_right.setValue(response);
+                this.editor_right.dispatch({ changes: { from: 0, to: this.editor_right.state.doc.length, insert: response } });
+
                 console.log("完成格式化")
                 this.el_col_left = 12;
                 this.el_col_right = 12;
@@ -256,7 +284,7 @@ print(response.status_code)
                 this.rightFolded = 0;
             } catch (error) {
                 console.error("请求失败:", error);
-                this.editor_right.setValue("请求失败，请检查控制台日志或输入的curl。");
+                this.editor_right.dispatch({ changes: { from: 0, to: this.editor_right.state.doc.length, insert: "请求失败,请检查控制台日志或输入的curl" } });
                 this.el_col_left = 12;
                 this.el_col_right = 12;
                 this.leftFolded = 0;
@@ -270,6 +298,7 @@ print(response.status_code)
 <style scoped>
 .editor-container {
     height: 100%;
+    width: 100%;
     margin: 0;
 }
 
@@ -279,13 +308,16 @@ print(response.status_code)
 }
 
 /* 添加 CodeMirror 相关样式 */
-:deep(.CodeMirror) {
+:deep(.cm-editor) {
     height: 100% !important;
     max-height: calc(100vh - 75px);
     border: 1px solid #0b4bdf;
     border-radius: 4px;
     font-family: monospace;
     font-size: 14px;
+}
+:deep(.cm-editor.cm-focused) {
+    outline: none !important;
 }
 
 :deep(.CodeMirror-gutters) {

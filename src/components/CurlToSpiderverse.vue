@@ -226,7 +226,14 @@ export default {
 
                 const method = json_curl.method;
                 const headers = json_curl.headers;
-                const data = json_curl.data || {};
+                var data = json_curl.data || {};
+                try {
+                    if (data) {
+                        data = JSON.parse(data);
+                    } 
+                }catch (error) {
+                    console.log("不是json格式的数据")
+                }
                 const cookies = json_curl.cookies || {};
 
                 let data_temp, data_str, data_python;
@@ -294,7 +301,7 @@ ${data_temp}
                 this.rightFolded = 0;
             } catch (error) {
                 console.error("请求失败:", error);
-                this.editor_right.setValue("请求失败，请检查控制台日志或输入的curl。");
+                this.editor_right.dispatch({ changes: { from: 0, to: this.editor_right.state.doc.length, insert: response } });
                 this.el_col_left = 12;
                 this.el_col_right = 12;
                 this.leftFolded = 0;
