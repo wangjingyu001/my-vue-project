@@ -82,7 +82,7 @@ import JsonCompare from "./JsonCompare.vue"; // 引入组件
 import ObjectToDict from './ObjectToDict.vue';
 import CurlToSpiderverse from "./CurlToSpiderverse.vue";
 import FormatJs from "./FormatJs.vue";
-// import FormatHtml from './FormatHtml.vue';
+import FormatHtml from './FormatHtml.vue';
 import FormatUrl from "./FormatUrl.vue";
 // import EncodeDecodeUrl from './EncodeDecodeUrl.vue'
 // import UnicodeDecode from "./UnicodeDecode.vue";
@@ -99,7 +99,7 @@ export default {
         FormatUrl,
         ObjectToDict,
         FormatJs,
-        // FormatHtml,
+        FormatHtml,
         // EncodeDecodeUrl,
         // UnicodeDecode,
         // Encrypt
