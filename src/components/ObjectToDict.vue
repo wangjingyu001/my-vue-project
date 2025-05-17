@@ -60,7 +60,6 @@ import { Decoration, WidgetType } from "@codemirror/view" // 添加这行
 
 import { EditorView, basicSetup } from "codemirror"
 import { StateEffect, StateField } from "@codemirror/state";
-import { javascript } from "@codemirror/lang-javascript"
 import { foldAll, unfoldAll,foldable,foldEffect , foldGutter, codeFolding ,foldCode,syntaxTree} from "@codemirror/language";
 import { json } from "@codemirror/lang-json";
 import { python } from "@codemirror/lang-python";
@@ -128,7 +127,7 @@ export default {
             extensions: [
                 basicSetup,
                 json(),
-                codeFolding(),
+                codeFolding(), // 启用折叠功能
                 this.lineWrappingComp.of(this.lineWrapping ? EditorView.lineWrapping : []) // 动态管理换行扩展
             ],
             parent: document.getElementById("editor-left"),
@@ -145,6 +144,7 @@ export default {
             extensions: [
                 basicSetup,
                 python(),
+                codeFolding(),
                 this.lineWrappingComp.of(this.lineWrapping ? EditorView.lineWrapping : []), // 动态管理换行扩展
                 widgetDecorations, // 添加装饰器状态字段
                 EditorView.domEventHandlers({
@@ -207,23 +207,23 @@ export default {
             this.currentWidgetLine = null;
         },
         foldAllRecursive(view) {
-  const state = view.state;
+            const state = view.state;
 
-  // Traverse the syntax tree and collect all foldable ranges
-  const foldRanges= [];
-  syntaxTree(state).iterate({
-    enter(node) {
-      const isFoldable = foldable(state, node.from, node.to)
-      if (isFoldable) {
-        foldRanges.push({ from: isFoldable.from, to: isFoldable.to });
-      }
-    }
-  });
+            // Traverse the syntax tree and collect all foldable ranges
+            const foldRanges= [];
+            syntaxTree(state).iterate({
+                enter(node) {
+                const isFoldable = foldable(state, node.from, node.to)
+                if (isFoldable) {
+                    foldRanges.push({ from: isFoldable.from, to: isFoldable.to });
+                }
+                }
+            });
 
-  view.dispatch({
-    effects: foldRanges.map(range => foldEffect.of({ from: range.from, to: range.to }))
-  });
-},
+            view.dispatch({
+                effects: foldRanges.map(range => foldEffect.of({ from: range.from, to: range.to }))
+            });
+        },
         getValueByPath(path,start_line,end_line ) {
             const object_js = JSON.parse(this.response.data.result.object_js);
 
@@ -369,7 +369,12 @@ export default {
                 case 'foldRight':
                     this.rightFolded = !this.rightFolded;
                     if (this.rightFolded) {
-                        foldAll(this.editor_right);
+    //                         this.editor_right.dispatch({
+    // effects: EditorView.scrollIntoView(this.editor_right.state.doc.length)
+    // });
+                    foldAll(this.editor_right)
+                        
+                        // this.foldAllRecursive(this.editor_right);
                     } else {
                         unfoldAll(this.editor_right);
                     }
@@ -413,6 +418,15 @@ export default {
                     this.editor_right.dispatch({ changes: { from: 0, to: this.editor_right.state.doc.length, insert: this.response.data.result.dict_py } });
                     this.lines_yingshe = this.response.data.result.lines_yingshe;
                     this.lines_yingshe_reverse = this.response.data.result.lines_yingshe_reverse;
+                    this.editor_right.requestMeasure()
+                    this.editor_right.dispatch({
+                effects: EditorView.scrollIntoView(0, { y: "start" })
+            });
+            // 延迟刷新，确保渲染完成
+            setTimeout(() => {
+                this.editor_right.requestMeasure();
+            }, 1000);
+
                     console.log("完成格式化")
                 } else {
                     this.editor_right.dispatch({ changes: { from: 0, to: this.editor_right.state.doc.length, insert: "格式化失败,json不合法,请检查控制台日志或输入的数据." } });
