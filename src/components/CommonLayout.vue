@@ -80,7 +80,7 @@
 import JsonCompare from "./JsonCompare.vue"; // 引入组件
 // import JsonFormat from "./JsonFormat.vue"; // 引入组件
 import ObjectToDict from './ObjectToDict.vue';
-// import CurlToSpiderverse from "./CurlToSpiderverse.vue";
+import CurlToSpiderverse from "./CurlToSpiderverse.vue";
 // import FormatJs from "./FormatJs.vue";
 // import FormatHtml from './FormatHtml.vue';
 // import FormatUrl from "./FormatUrl.vue";
@@ -95,7 +95,7 @@ export default {
         JsonCompare,
         // JsonFormat,
         // CurlToRequests,
-        // CurlToSpiderverse,
+        CurlToSpiderverse,
         // FormatUrl,
         ObjectToDict,
         // FormatJs,
