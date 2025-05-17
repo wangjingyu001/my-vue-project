@@ -77,7 +77,7 @@
 </template>
 
 <script>
-// import JsonCompare from "./JsonCompare.vue"; // 引入组件
+import JsonCompare from "./JsonCompare.vue"; // 引入组件
 // import JsonFormat from "./JsonFormat.vue"; // 引入组件
 import ObjectToDict from './ObjectToDict.vue';
 // import CurlToSpiderverse from "./CurlToSpiderverse.vue";
@@ -92,7 +92,7 @@ import ObjectToDict from './ObjectToDict.vue';
 
 export default {
     components: {
-        // JsonCompare,
+        JsonCompare,
         // JsonFormat,
         // CurlToRequests,
         // CurlToSpiderverse,

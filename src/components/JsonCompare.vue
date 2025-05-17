@@ -8,7 +8,7 @@
             </el-icon>
             执行
         </el-button>
-        <el-checkbox v-model="show_linenums" label="显示行号" size="small" border />
+        <el-checkbox v-model="lineWrapping" label="自动换行" size="small" border />
     </el-row>
 
     <el-row>
@@ -21,15 +21,13 @@
     <el-row :gutter="20" class="editor-container">
         <!-- 左侧编辑区域 -->
         <el-col :span="12">
-            <div class="editor-wrapper">
-                <textarea ref="editor_left" placeholder="请输入JSON" class="editor-left"></textarea>
+            <div class="editor-wrapper" id="editor-left">
             </div>
         </el-col>
 
         <!-- 右侧编辑区域 -->
         <el-col :span="12">
-            <div class="editor-wrapper">
-                <textarea ref="editor_right" placeholder="请输入JSON" class="editor-right"></textarea>
+            <div class="editor-wrapper" id="editor-right">
             </div>
         </el-col>
 
@@ -37,21 +35,53 @@
 </template>
 
 <script>
-import CodeMirror from "codemirror";
-import "codemirror/mode/javascript/javascript";
-import "codemirror/lib/codemirror.css";
-import "codemirror/theme/monokai.css";
-import 'codemirror/addon/scroll/simplescrollbars.css'
-import 'codemirror/addon/scroll/simplescrollbars'
-import "codemirror/addon/fold/foldcode";
-import "codemirror/addon/fold/foldgutter";
-import "codemirror/addon/fold/brace-fold";
-import "codemirror/lib/codemirror.css";
-import "codemirror/addon/fold/foldgutter.css"
+import { EditorState, Compartment, StateEffect, StateField  } from "@codemirror/state"
+import { Decoration, WidgetType } from "@codemirror/view" // 添加这行
+import { EditorView, basicSetup } from "codemirror"
+import { codeFolding } from "@codemirror/language";
+import { python } from "@codemirror/lang-python";
+
 import { Loading, ArrowRight } from '@element-plus/icons-vue';
 import { ElMessage } from 'element-plus';
 import { compareJson } from "@/api/api";
 // import { formatHeaders } from "@/api/api";
+
+
+
+// 1. 定义高亮效果
+const highlightEffect = StateEffect.define({
+  map: (val, mapping) => ({
+    from: mapping.mapPos(val.from),
+    to: mapping.mapPos(val.to),
+    className: val.className
+  })
+});
+
+// 2. 创建状态字段管理装饰器
+const highlightField = StateField.define({
+  create() {
+    return Decoration.none;
+  },
+  update(highlights, tr) {
+    // 映射现有高亮到新文档位置
+    highlights = highlights.map(tr.changes);
+    
+    // 添加新高亮
+    for (let e of tr.effects) {
+      if (e.is(highlightEffect)) {
+        const deco = Decoration.mark({
+          class: e.value.className
+        }).range(e.value.from, e.value.to);
+        highlights = highlights.update({ add: [deco] });
+      }
+    }
+    
+    return highlights;
+  },
+  provide: f => EditorView.decorations.from(f)
+});
+
+
 export default {
     name: "json_compare",
     components: {
@@ -68,70 +98,111 @@ export default {
             right_content: "",
             isLoading: false, // 按钮加载状态
             show_linenums: true,
+            lineWrapping: false, // 默认关闭换行
+            lineWrappingComp: new Compartment(), // 创建 Compartment 实例
         };
     },
     mounted() {
         // 初始化 CodeMirror
-        this.editor_left = CodeMirror.fromTextArea(this.$refs.editor_left, {
-            mode: "application/json",
-            foldGutter: true,
-            simplescrollbars: 'simple',
-            gutters: ["CodeMirror-linenumbers", "CodeMirror-foldgutter"], // 添加折叠的 gutter
-            // theme: "monokai",
-            lineNumbers: this.show_linenums,
-        });
-        this.editor_right = CodeMirror.fromTextArea(this.$refs.editor_right, {
-            mode: "application/json",
-            foldGutter: true,
-            simplescrollbars: 'simple',
-            gutters: ["CodeMirror-linenumbers", "CodeMirror-foldgutter"], // 添加折叠的 gutter
-            // theme: "monokai",
-            lineNumbers: this.show_linenums,
-        });
-        this.editor_left.setSize('100%', '100%'); // 设置 CodeMirror 高度为 100% 
-        this.editor_right.setSize('100%', '100%'); // 设置 CodeMirror 高度为 100% 
-        this.left_content = "";
-        this.right_content = "";
+        this.editor_left = new EditorView({
+            extensions: [
+                basicSetup,
+                python(),
+                codeFolding(), // 启用折叠功能
+                highlightField ,
+                this.lineWrappingComp.of(this.lineWrapping ? EditorView.lineWrapping : []) // 动态管理换行扩展
+            ],
+            parent: document.getElementById("editor-left"),
+            contentHeight: 1000
+        })
+
+        const editorLeftContainer = document.getElementById("editor-left");
+        editorLeftContainer.style.width = '100%';
+        editorLeftContainer.style.height = '100%';
+
+        this.editor_right = new EditorView({
+            extensions: [
+                basicSetup,
+                python(),
+                codeFolding(),
+                highlightField ,
+                this.lineWrappingComp.of(this.lineWrapping ? EditorView.lineWrapping : []), // 动态管理换行扩展
+            ],
+            parent: document.getElementById("editor-right"),
+            contentHeight: 1000
+        })
+        const editorRightContainer = document.getElementById("editor-right");
+        editorRightContainer.style.width = '100%';
+        editorRightContainer.style.height = '100%';
+
     },
     watch: {
-        show_linenums(newValue) {
-            // 监听 show_linenums 的变化，动态更新 CodeMirror 的 lineNumbers 配置
-            this.editor_left.setOption("lineNumbers", newValue);
-            this.editor_right.setOption("lineNumbers", newValue);
+        lineWrapping(newValue) {
+            // 动态更新换行配置
+            this.editor_left.dispatch({
+                effects: this.lineWrappingComp.reconfigure(newValue ? EditorView.lineWrapping : [])
+            });
+            this.editor_right.dispatch({
+                effects: this.lineWrappingComp.reconfigure(newValue ? EditorView.lineWrapping : [])
+            });
         }
     },
     methods: {
-        highlightLines(editor, lines, class_type) {
-
-            editor.operation(() => {
-                lines.forEach(lineNum => {
-                    editor.addLineClass(lineNum, "background", class_type); // 减1是因为行号是从0开始的
+        
+        // 4. 添加高亮（可选，完整示例）
+        addHighlight(editor, lines, className) {
+            // 1. 获取文档对象
+            const doc = editor.state.doc;
+            
+            // 2. 收集所有需要高亮的范围
+            const ranges = [];
+            for (const lineNum of lines) {
+                try {
+                // 行号有效性检查
+                if (lineNum < 0 || lineNum >= doc.lines) continue;
+                
+                // 获取行范围
+                const line = doc.line(lineNum + 1); // 注意: 行号从1开始
+                ranges.push({
+                    from: line.from,
+                    to: line.to,
+                    className
                 });
-            });
-        },
-        clearHighlights(editor) {
-            editor.operation(() => {
-                for (let i = 0; i < editor.lineCount(); i++) {
-                    let lineHandle = editor.getLineHandle(i);
-                    editor.removeLineClass(lineHandle, "background", "highlight_changed");
-                    editor.removeLineClass(lineHandle, "background", "highlight_added");
-                    editor.removeLineClass(lineHandle, "background", "highlight_removed");
+                } catch (e) {
+                console.warn(`无效行号: ${lineNum}`, e);
                 }
-            });
+            }
+
+            // 3. 批量添加高亮效果
+            editor.dispatch({
+                effects: ranges.map(range => 
+                highlightEffect.of(range))
+            })
         },
+
         async handleExecute() {
             this.isLoading = true;
 
-            const left_content_input = this.editor_left.getValue();
-            const right_content_input = this.editor_right.getValue();
+            const left_content_input = this.editor_left.state.doc.toString();
+            const right_content_input = this.editor_right.state.doc.toString();
 
             // 如果左右的值没有变动，那么即使再次执行也不进行任何操作
             if (left_content_input == this.left_content && right_content_input == this.right_content) {
                 this.isLoading = false;
                 return
             }
-            const response = await compareJson(left_content_input, right_content_input)
-
+            try{
+                var response = await compareJson(left_content_input, right_content_input)
+            } catch (e) {
+                    ElMessage({
+                        message: '请求失败,json不合法,请检查控制台日志或输入的数据.',
+                        type: 'error',
+                        duration: 3000
+                    });
+                this.isLoading = false;
+                    console.error(e)
+                    return 
+            }
             if (response.data.status != 200) {
                 console.error("解析数据失败");
                 ElMessage({
@@ -167,28 +238,26 @@ export default {
                 return;
             }
 
+            this.editor_left.dispatch({ changes: { from: 0, to: this.editor_left.state.doc.length, insert: rpjs.json1 } });
+            this.editor_right.dispatch({ changes: { from: 0, to: this.editor_right.state.doc.length, insert: rpjs.json2 } });
 
-            this.editor_left.setValue(rpjs.json1);
-            this.editor_right.setValue(rpjs.json2);
             this.error_message = '';
 
-            this.clearHighlights(this.editor_left);
-            this.clearHighlights(this.editor_right);
             let editor_left_changed = rpjs.json1_highlight_change;
             let editor_right_changed = rpjs.json2_highlight_change;
             let editor_left_removed = rpjs.json1_highlight_removed;
             let editor_right_added = rpjs.json2_highlight_added;
-            this.highlightLines(this.editor_left, editor_left_changed, "highlight_changed");
-            this.highlightLines(this.editor_right, editor_right_changed, "highlight_changed");
-            this.highlightLines(this.editor_left, editor_left_removed, "highlight_removed");
-            this.highlightLines(this.editor_right, editor_right_added, "highlight_added");
+            this.addHighlight(this.editor_left, editor_left_removed, "highlight_removed");
+            this.addHighlight(this.editor_left, editor_left_changed, "highlight_changed");
+            this.addHighlight(this.editor_right, editor_right_changed, "highlight_changed");
+            this.addHighlight(this.editor_right, editor_right_added, "highlight_added");
 
             this.changed_nums = editor_left_changed.length + editor_right_changed.length
             this.removed_nums = editor_left_removed.length
             this.added_nums = editor_right_added.length
 
-            this.editor_left.refresh()
-            this.editor_right.refresh()
+            // this.editor_left.refresh()
+            // this.editor_right.refresh()
             this.isLoading = false;
 
         },
@@ -199,6 +268,7 @@ export default {
 <style scoped>
 .editor-container {
     height: 100%;
+    width: 100%;
     margin: 0;
 }
 
@@ -208,15 +278,17 @@ export default {
 }
 
 /* 添加 CodeMirror 相关样式 */
-:deep(.CodeMirror) {
+:deep(.cm-editor) {
     height: 100% !important;
-    max-height: calc(100vh - 95px);
+    max-height: calc(100vh - 100px);
     border: 1px solid #0b4bdf;
     border-radius: 4px;
     font-family: monospace;
     font-size: 14px;
 }
-
+:deep(.cm-editor.cm-focused) {
+    outline: none !important;
+}
 :deep(.CodeMirror-gutters) {
     border-right: 1px solid #4b4b4b;
     /* background-color: #272822; */

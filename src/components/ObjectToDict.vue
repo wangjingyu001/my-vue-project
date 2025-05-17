@@ -56,8 +56,6 @@ import { ElMessage } from 'element-plus';
 import { objectToDict } from '@/api/api'
 import { EditorState, Compartment } from "@codemirror/state"
 import { Decoration, WidgetType } from "@codemirror/view" // 添加这行
-
-
 import { EditorView, basicSetup } from "codemirror"
 import { StateEffect, StateField } from "@codemirror/state";
 import { foldAll, unfoldAll,foldable,foldEffect , foldGutter, codeFolding ,foldCode,syntaxTree} from "@codemirror/language";
@@ -398,7 +396,10 @@ export default {
                 try {
                     format_str = JSON.stringify(JSON.parse(JSON.parse(format_str)));
                 } catch (e) {
-                    format_str = JSON.stringify(JSON.parse(format_str));
+                    try{
+                        format_str = JSON.stringify(JSON.parse(format_str));
+
+                    }catch(e){}
                 }
                 try {
                     this.response = await objectToDict(format_str);
