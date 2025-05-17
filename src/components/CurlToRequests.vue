@@ -52,7 +52,6 @@ import { python } from "@codemirror/lang-python";
 
 import * as curlconverter from 'curlconverter';
 import { ArrowDown } from '@element-plus/icons-vue';
-import { forIn } from "lodash";
 
 
 export default {

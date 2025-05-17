@@ -1,106 +1,186 @@
 <template>
-
+    <el-row>
+        <!-- 视图控制下拉菜单 -->
+        <el-dropdown @command="handleViewCommand" trigger="click">
+            <el-button size="small">
+                视图控制
+                <el-icon class="el-icon--right"><arrow-down /></el-icon>
+            </el-button>
+            <template #dropdown>
+                <el-dropdown-menu>
+                    <!-- 左侧全屏选项 -->
+                    <el-dropdown-item command="leftFull" v-if="el_col_left <= 12">左侧全屏</el-dropdown-item>
+                    <!-- 右侧全屏选项 -->
+                    <el-dropdown-item command="rightFull" v-if="el_col_right <= 12">右侧全屏</el-dropdown-item>
+                    <!-- 还原布局选项 -->
+                    <el-dropdown-item command="restore" v-if="el_col_left !== 12">还原布局</el-dropdown-item>
+                    <!-- 添加空白分隔行 -->
+                    <el-dropdown-item disabled style="cursor: default; background: grey; height: 1px; padding: 0; margin: 5px 0;"></el-dropdown-item>
+                    <!-- 左侧折叠/展开选项 -->
+                    <el-dropdown-item v-if="el_col_right <= 12" command="foldLeft">左侧{{ leftFolded ? '展开' : '折叠' }}</el-dropdown-item>
+                    <!-- 右侧折叠/展开选项 -->
+                    <el-dropdown-item command="foldRight" v-if="el_col_left <= 12">右侧{{ rightFolded ? '展开' : '折叠' }}</el-dropdown-item>
+                </el-dropdown-menu>
+            </template>
+        </el-dropdown>
+        <!-- 执行按钮 -->
+        <el-checkbox v-model="lineWrapping" label="自动换行" size="small" border />
+        </el-row>
 
     <el-row :gutter="20" class="editor-container">
         <!-- 左侧编辑区域 -->
-
-        <el-col :span="12">
-            <div class="editor-wrapper">
-                <textarea v-model="left_content" ref="editor_left" class="editor-left"></textarea>
+        <el-col :span="el_col_left">
+            <div class="editor-wrapper" id="editor-left">
             </div>
         </el-col>
 
         <!-- 右侧编辑区域 -->
-        <el-col :span="12">
-            <div class="editor-wrapper">
-                <textarea v-model="right_content" ref="editor_right" class="editor-right"></textarea>
+        <el-col :span="el_col_right">
+            <div class="editor-wrapper" id="editor-right">
             </div>
         </el-col>
-    </el-row>
 
+    </el-row>
 </template>
 
 <script>
-import CodeMirror from "codemirror";
-import "codemirror/mode/javascript/javascript";
-import "codemirror/lib/codemirror.css";
-import "codemirror/theme/monokai.css";
-import 'codemirror/addon/scroll/simplescrollbars.css'
-import 'codemirror/addon/scroll/simplescrollbars'
-import "codemirror/addon/fold/foldcode";
-import "codemirror/addon/fold/foldgutter";
-import "codemirror/addon/fold/brace-fold";
-import "codemirror/lib/codemirror.css";
-import "codemirror/addon/fold/foldgutter.css"
-import 'codemirror/addon/display/placeholder.js'
+import { EditorState, Compartment, StateEffect, StateField  } from "@codemirror/state"
+import { Decoration, WidgetType } from "@codemirror/view" // 添加这行
+import { EditorView, basicSetup } from "codemirror"
+import { codeFolding,foldAll, unfoldAll,syntaxTree,foldable,foldEffect   } from "@codemirror/language";
+import { python } from "@codemirror/lang-python";
+
+import * as curlconverter from 'curlconverter';
+import { ArrowDown } from '@element-plus/icons-vue';
 
 export default {
+    name: "format_url",
+    components: {
+        ArrowDown
+    },
     data() {
         return {
             error_message: "",
             left_content: "",
-            right_content: ""
+            right_content: "",
+            el_col_left: 12,
+            el_col_right: 12,
+            lineWrapping: false, // 默认关闭换行
+            lineWrappingComp: new Compartment(), // 创建 Compartment 实例
         };
     },
     mounted() {
+        
         // 初始化 CodeMirror
-        this.editor_left = CodeMirror.fromTextArea(this.$refs.editor_left, {
-            mode: "text/plain",
-            foldGutter: true,
-            gutters: ["CodeMirror-linenumbers", "CodeMirror-foldgutter"], // 添加折叠的 gutter
-            lineNumbers: true,
-            scrollbarStyle: "simple", // 使用原生滚动条样式
-            placeholder: `输入 url 
-https://www.google.com/search?q=1&rlz=1C1GCHD_en__1135__1135&oq=1+&gs_lcrp=EgZjaHJvbWUyBggAEEUYOTIGCAEQRRg8MgYIAhBFGDwyBggDEEUYPDIGCAQQRRg8MgYIBRBFGDwyBggGEEUYPDIGCAcQRRhB0gEINTEzOGowajeoAgCwAgA&sourceid=chrome&ie=UTF-8
-            `
-        });
-        this.editor_right = CodeMirror.fromTextArea(this.$refs.editor_right, {
-            mode: "python",
-            foldGutter: true,
-            simplescrollbars: 'simple',
-            gutters: ["CodeMirror-linenumbers", "CodeMirror-foldgutter"], // 添加折叠的 gutter
-            lineNumbers: true,
-            placeholder: `
+        this.editor_left = new EditorView({
+            extensions: [
+                basicSetup,
+                python(),
+                codeFolding(), // 启用折叠功能
+                EditorView.updateListener.of((update) => {
+                    if (update.docChanged) {
+                    // 文档内容发生了变化
+                    console.log("内容已变更！");
+                    // console.log("变更前内容：", update.startState.doc.toString());
+                    // console.log("变更后内容：", update.state.doc.toString());
+                    this.formaturl();
+                    
+                    }
+                }),
+                this.lineWrappingComp.of(this.lineWrapping ? EditorView.lineWrapping : []) // 动态管理换行扩展
+            ],
+            parent: document.getElementById("editor-left"),
+            contentHeight: 1000
+        })
 
-url = "https://www.google.com/search"
-params = {
-    "q": "1",
-    "rlz": "1C1GCHD_en__1135__1135",
-    "oq": "1 ",
-    "gs_lcrp": "EgZjaHJvbWUyBggAEEUYOTIGCAEQRRg8MgYIAhBFGDwyBggDEEUYPDIGCAQQRRg8MgYIBRBFGDwyBggGEEUYPDIGCAcQRRhB0gEINTEzOGowajeoAgCwAgA",
-    "sourceid": "chrome",
-    "ie": "UTF-8"
-}
+        const editorLeftContainer = document.getElementById("editor-left");
+        editorLeftContainer.style.width = '100%';
+        editorLeftContainer.style.height = '100%';
 
-
-
-from urllib.parse import urlparse, parse_qs, urlencode, urljoin
-base_url = "https://www.google.com/search"
-params = {
-    "q": "1",
-    "rlz": "1C1GCHD_en__1135__1135",
-    "oq": "1 ",
-    "gs_lcrp": "EgZjaHJvbWUyBggAEEUYOTIGCAEQRRg8MgYIAhBFGDwyBggDEEUYPDIGCAQQRRg8MgYIBRBFGDwyBggGEEUYPDIGCAcQRRhB0gEINTEzOGowajeoAgCwAgA",
-    "sourceid": "chrome",
-    "ie": "UTF-8"
-}
-query_string = urlencode(params)
-full_url = urljoin(base_url, '?' + query_string)
-
-
-            `,
-        });
-        this.editor_left.on('change', (instance, changeObj) => {
-            this.formaturl(instance.getValue());
-        });
+        this.editor_right = new EditorView({
+            extensions: [
+                basicSetup,
+                python(),
+                codeFolding(),
+                this.lineWrappingComp.of(this.lineWrapping ? EditorView.lineWrapping : []), // 动态管理换行扩展
+            ],
+            parent: document.getElementById("editor-right"),
+            contentHeight: 1000
+        })
+        const editorRightContainer = document.getElementById("editor-right");
+        editorRightContainer.style.width = '100%';
+        editorRightContainer.style.height = '100%';
 
     },
+    watch: {
+        lineWrapping(newValue) {
+            // 动态更新换行配置
+            this.editor_left.dispatch({
+                effects: this.lineWrappingComp.reconfigure(newValue ? EditorView.lineWrapping : [])
+            });
+            this.editor_right.dispatch({
+                effects: this.lineWrappingComp.reconfigure(newValue ? EditorView.lineWrapping : [])
+            });
+        }
+    },
     methods: {
+        foldAllRecursive(view) {
+            const state = view.state;
+
+            // Traverse the syntax tree and collect all foldable ranges
+            const foldRanges= [];
+            syntaxTree(state).iterate({
+                enter(node) {
+                const isFoldable = foldable(state, node.from, node.to)
+                if (isFoldable) {
+                    foldRanges.push({ from: isFoldable.from, to: isFoldable.to });
+                }
+                }
+            });
+
+            view.dispatch({
+                effects: foldRanges.map(range => foldEffect.of({ from: range.from, to: range.to }))
+            });
+        },
+        handleViewCommand(command) {
+            switch (command) {
+                case 'leftFull':
+                    this.el_col_left = 24;
+                    this.el_col_right = 0;
+                    break;
+                case 'rightFull':
+                    this.el_col_left = 0;
+                    this.el_col_right = 24;
+                    break;
+                case 'restore':
+                    this.el_col_left = 12;
+                    this.el_col_right = 12;
+                    break;
+                case 'foldLeft':
+                    this.leftFolded = !this.leftFolded;
+                    if (this.leftFolded) {
+                        this.foldAllRecursive(this.editor_left);
+                    } else {
+                        unfoldAll(this.editor_left);
+                    };
+                    break;
+                case 'foldRight':
+                    this.rightFolded = !this.rightFolded;
+                    if (this.rightFolded) {
+                        this.foldAllRecursive(this.editor_right);
+                    } else {
+                        unfoldAll(this.editor_right);
+                    };
+                    break;
+            }
+        },
         extractUrlParams(urlString) {
             const url = new URL(urlString);
             return Object.fromEntries(url.searchParams);
         },
-        formaturl(format_str) {
+        formaturl() {
+            const format_str = this.editor_left.state.doc.toString();
+            
             try {
                 const url = new URL(format_str);
                 const origin = url.origin;
@@ -124,13 +204,15 @@ full_url = urljoin(base_url, '?' + query_string)
 
                 `
 
-                this.editor_right.setValue(response);
+                this.editor_right.dispatch({ changes: { from: 0, to: this.editor_right.state.doc.length, insert: response } });
 
 
             } catch (error) {
 
                 console.error("请求失败:", error);
-                this.editor_right.setValue("请求失败，请检查控制台日志或输入的cookies。");
+                this.editor_right.dispatch({ changes: { from: 0, to: this.editor_right.state.doc.length, insert: "请求失败,请检查控制台日志或输入的curl" } });
+                
+
             }
 
         }
@@ -141,6 +223,7 @@ full_url = urljoin(base_url, '?' + query_string)
 <style scoped>
 .editor-container {
     height: 100%;
+    width: 100%;
     margin: 0;
 }
 
@@ -150,13 +233,16 @@ full_url = urljoin(base_url, '?' + query_string)
 }
 
 /* 添加 CodeMirror 相关样式 */
-:deep(.CodeMirror) {
+:deep(.cm-editor) {
     height: 100% !important;
-    max-height: calc(100vh - 51px);
+    max-height: calc(100vh - 75px);
     border: 1px solid #0b4bdf;
     border-radius: 4px;
     font-family: monospace;
     font-size: 14px;
+}
+:deep(.cm-editor.cm-focused) {
+    outline: none !important;
 }
 
 :deep(.CodeMirror-gutters) {
@@ -167,14 +253,5 @@ full_url = urljoin(base_url, '?' + query_string)
 /* 可以添加一些悬停效果 */
 .editor-card:hover {
     border-color: var(--el-color-primary);
-}
-
-
-/* 设置 CodeMirror 的 placeholder 样式 */
-.CodeMirror .CodeMirror-placeholder {
-    color: #ccc;
-    /* 将 placeholder 颜色设置为浅灰色 */
-    opacity: 1;
-    /* 确保 placeholder 不透明 */
 }
 </style>

@@ -83,7 +83,7 @@ import ObjectToDict from './ObjectToDict.vue';
 import CurlToSpiderverse from "./CurlToSpiderverse.vue";
 // import FormatJs from "./FormatJs.vue";
 // import FormatHtml from './FormatHtml.vue';
-// import FormatUrl from "./FormatUrl.vue";
+import FormatUrl from "./FormatUrl.vue";
 // import EncodeDecodeUrl from './EncodeDecodeUrl.vue'
 // import UnicodeDecode from "./UnicodeDecode.vue";
 import CurlToRequests from "./CurlToRequests.vue";
@@ -96,7 +96,7 @@ export default {
         // JsonFormat,
         CurlToRequests,
         CurlToSpiderverse,
-        // FormatUrl,
+        FormatUrl,
         ObjectToDict,
         // FormatJs,
         // FormatHtml,
