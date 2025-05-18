@@ -14,10 +14,13 @@
                     <el-dropdown-item command="rightFull" v-if="el_col_right <= 12">右侧全屏</el-dropdown-item>
                     <!-- 还原布局选项 -->
                     <el-dropdown-item command="restore" v-if="el_col_left !== 12">还原布局</el-dropdown-item>
+                    
                 </el-dropdown-menu>
             </template>
         </el-dropdown>
         <!-- 执行按钮 -->
+         
+        <el-checkbox v-model="lineWrapping" label="自动换行" size="small" border />
         <el-button @click="unicode_decode" size="small">unicode解码</el-button>
         <el-button @click="unicode_encode" size="small">unicode编码</el-button>
     </el-row>
@@ -25,15 +28,13 @@
     <el-row :gutter="20" class="editor-container">
         <!-- 左侧编辑区域 -->
         <el-col :span="el_col_left">
-            <div class="editor-wrapper">
-                <textarea v-model="left_content" ref="editor_left" class="editor-left"></textarea>
+            <div class="editor-wrapper" id="editor-left">
             </div>
         </el-col>
 
         <!-- 右侧编辑区域 -->
         <el-col :span="el_col_right">
-            <div class="editor-wrapper">
-                <textarea v-model="right_content" ref="editor_right" class="editor-right"></textarea>
+            <div class="editor-wrapper" id="editor-right">
             </div>
         </el-col>
 
@@ -41,80 +42,78 @@
 </template>
 
 <script>
-import CodeMirror from "codemirror";
-import "codemirror/lib/codemirror.css";
+import { EditorState, Compartment, StateEffect, StateField  } from "@codemirror/state"
+import { EditorView, basicSetup } from "codemirror"
 
-// 模式引入
-import "codemirror/mode/javascript/javascript";
-import "codemirror/mode/xml/xml";
-import "codemirror/mode/css/css";
-
-// 主题
-import "codemirror/theme/monokai.css";
 import { ArrowDown } from '@element-plus/icons-vue';
 
-// 滚动条
-import 'codemirror/addon/scroll/simplescrollbars.css';
-import 'codemirror/addon/scroll/simplescrollbars';
-import 'codemirror/addon/display/placeholder.js'
 
 
 export default {
+    name : "encodedecode_url",
     components: {
         ArrowDown
     },
     data() {
         return {
-            left_content: "",
-            right_content: "",
             el_col_left: 12,
             el_col_right: 12,
+            left_content: "",
+            right_content: "",
+            lineWrapping: false, // 默认关闭换行
+            lineWrappingComp: new Compartment(), // 创建 Compartment 实例
+   
         };
     },
     mounted() {
+        
         // 初始化 CodeMirror
-        this.placeholder_left = `
-python工具库认准pytools
-`
-        this.editor_left = CodeMirror.fromTextArea(this.$refs.editor_left, {
-            mode: "text/plain",
-            simplescrollbars: 'simple',
-            placeholder: this.placeholder_left
-        });
-        this.placeholder_right = `
-python\u5de5\u5177\u5e93\u8ba4\u51c6pytools
-        `
-        this.editor_right = CodeMirror.fromTextArea(this.$refs.editor_right, {
-            mode: "text/plain",
-            simplescrollbars: 'simple',
-            placeholder: this.placeholder_right
+        this.editor_left = new EditorView({
+            extensions: [
+                basicSetup,
+                EditorView.updateListener.of((update) => {
+                    if (update.docChanged) {
+                    // 文档内容发生了变化
+                    console.log("内容已变更！");
+                    // console.log("变更前内容：", update.startState.doc.toString());
+                    // console.log("变更后内容：", update.state.doc.toString());
+                    this.url_encode_decode();
+                    
+                    }
+                }),
+                this.lineWrappingComp.of(this.lineWrapping ? EditorView.lineWrapping : []) // 动态管理换行扩展
+            ],
+            parent: document.getElementById("editor-left"),
+            contentHeight: 1000
+        })
 
-        });
-        this.editor_left.setSize('100%', '100%'); // 设置 CodeMirror 高度为 100% 
-        this.editor_right.setSize('100%', '100%'); // 设置 CodeMirror 高度为 100% 
-        this.left_content = "";
-        this.right_content = "";
+        const editorLeftContainer = document.getElementById("editor-left");
+        editorLeftContainer.style.width = '100%';
+        editorLeftContainer.style.height = '100%';
 
-        this.editor_left.on('focus', () => {
-            // 清空 placeholder
-            this.editor_left.setOption('placeholder', '');
-        });
-        this.editor_right.on('focus', () => {
-            // 清空 placeholder
-            this.editor_right.setOption('placeholder', '');
-        });
-        this.editor_left.on('blur', () => {
-            // 如果编辑器内容为空，恢复 placeholder
-            if (this.editor_left.getValue() === '') {
-                this.editor_left.setOption('placeholder', this.placeholder_left);
-            }
-        });
-        this.editor_right.on('blur', () => {
-            // 如果编辑器内容为空，恢复 placeholder
-            if (this.editor_right.getValue() === '') {
-                this.editor_right.setOption('placeholder', this.placeholder_right);
-            }
-        });
+        this.editor_right = new EditorView({
+            extensions: [
+                basicSetup,
+                this.lineWrappingComp.of(this.lineWrapping ? EditorView.lineWrapping : []), // 动态管理换行扩展
+            ],
+            parent: document.getElementById("editor-right"),
+            contentHeight: 1000
+        })
+        const editorRightContainer = document.getElementById("editor-right");
+        editorRightContainer.style.width = '100%';
+        editorRightContainer.style.height = '100%';
+
+    },
+    watch: {
+        lineWrapping(newValue) {
+            // 动态更新换行配置
+            this.editor_left.dispatch({
+                effects: this.lineWrappingComp.reconfigure(newValue ? EditorView.lineWrapping : [])
+            });
+            this.editor_right.dispatch({
+                effects: this.lineWrappingComp.reconfigure(newValue ? EditorView.lineWrapping : [])
+            });
+        }
     },
     methods: {
         handleViewCommand(command) {
@@ -132,12 +131,6 @@ python\u5de5\u5177\u5e93\u8ba4\u51c6pytools
                     this.el_col_right = 12;
                     break;
             }
-
-            // 在布局变化后刷新编辑器
-            this.$nextTick(() => {
-                if (this.el_col_left > 0) this.editor_left.refresh();
-                if (this.el_col_right > 0) this.editor_right.refresh();
-            });
         },
         encodeMixedUnicode(input) {
             return input.split('').map(char => {
@@ -154,31 +147,37 @@ python\u5de5\u5177\u5e93\u8ba4\u51c6pytools
             });
         },
         unicode_decode() {
+            const format_str = this.editor_left.state.doc.toString();
             try {
-                this.editor_right.setValue(this.decodeMixedUnicode(this.editor_left.getValue()));
+                this.editor_right.dispatch({ changes: { from: 0, to: this.editor_right.state.doc.length, insert: this.decodeMixedUnicode(format_str) } });
+
                 console.log("完成格式化")
 
 
 
             } catch (error) {
-
+                this.editor_right.dispatch({ changes: { from: 0, to: this.editor_right.state.doc.length, insert: "请求失败,请检查控制台日志或输入的内容" } });
+                
                 console.error("请求失败:", error);
-                this.editor_right.setValue("请求失败,请检查控制台日志或输入");
             }
 
 
         },
         unicode_encode() {
+            const format_str = this.editor_left.state.doc.toString();
             try {
-                this.editor_right.setValue(this.encodeMixedUnicode(this.editor_left.getValue()));
+                this.editor_right.dispatch({ changes: { from: 0, to: this.editor_right.state.doc.length, insert: this.encodeMixedUnicode(format_str) } });
+
                 console.log("完成格式化")
             } catch (error) {
                 console.error("请求失败:", error);
-                this.editor_right.setValue("请求失败,请检查控制台日志或输入");
+                this.editor_right.dispatch({ changes: { from: 0, to: this.editor_right.state.doc.length, insert: "请求失败,请检查控制台日志或输入的内容" } });
+                
             }
 
 
         }
+
     },
 };
 </script>
@@ -186,6 +185,7 @@ python\u5de5\u5177\u5e93\u8ba4\u51c6pytools
 <style scoped>
 .editor-container {
     height: 100%;
+    width: 100%;
     margin: 0;
 }
 
@@ -195,13 +195,16 @@ python\u5de5\u5177\u5e93\u8ba4\u51c6pytools
 }
 
 /* 添加 CodeMirror 相关样式 */
-:deep(.CodeMirror) {
+:deep(.cm-editor) {
     height: 100% !important;
     max-height: calc(100vh - 75px);
     border: 1px solid #0b4bdf;
     border-radius: 4px;
     font-family: monospace;
     font-size: 14px;
+}
+:deep(.cm-editor.cm-focused) {
+    outline: none !important;
 }
 
 :deep(.CodeMirror-gutters) {
