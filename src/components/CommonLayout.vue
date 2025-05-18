@@ -84,7 +84,7 @@ import CurlToSpiderverse from "./CurlToSpiderverse.vue";
 import FormatJs from "./FormatJs.vue";
 import FormatHtml from './FormatHtml.vue';
 import FormatUrl from "./FormatUrl.vue";
-// import EncodeDecodeUrl from './EncodeDecodeUrl.vue'
+import EncodeDecodeUrl from './EncodeDecodeUrl.vue'
 // import UnicodeDecode from "./UnicodeDecode.vue";
 import CurlToRequests from "./CurlToRequests.vue";
 // import Encrypt from "./Encrypt.vue";
@@ -100,7 +100,7 @@ export default {
         ObjectToDict,
         FormatJs,
         FormatHtml,
-        // EncodeDecodeUrl,
+        EncodeDecodeUrl,
         // UnicodeDecode,
         // Encrypt
     },
