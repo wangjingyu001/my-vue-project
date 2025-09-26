@@ -148,7 +148,33 @@ export default {
         }
     },
     methods: {
-        
+        process_string(externalDataString){
+            // 将要执行的脚本 - 使用 IIFE 模式
+            const scriptToRun = `
+            (() => {
+                // ---- 在这个函数内部，我们创建了一个全新的、干净的作用域 ----
+
+                // 1. 在这个临时的、自己的作用域里定义变量，不会影响到外部
+                const None = null;
+                const True = true;
+                const False = false;
+                
+                // 2. 在这里，'None' 作为一个局部变量可以被安全地访问
+                // return 会将这个对象作为整个 IIFE 表达式的结果返回
+                return ${externalDataString}; 
+
+            })() // <-- 最后的 () 表示立即执行这个函数
+            `;
+            try {
+                // eval 执行整个 IIFE 字符串，并得到它的返回值
+                let result = eval(scriptToRun);
+                return JSON.stringify(result);
+            } catch (e) {
+                console.error("IIFE eval 执行失败:", e);
+                return externalDataString
+            }
+
+        },
         // 4. 添加高亮（可选，完整示例）
         addHighlight(editor, lines, className) {
             // 1. 获取文档对象
@@ -192,7 +218,7 @@ export default {
                 return
             }
             try{
-                var response = await compareJson(left_content_input, right_content_input)
+                var response = await compareJson(this.process_string(left_content_input), this.process_string(right_content_input))
             } catch (e) {
                     ElMessage({
                         message: '请求失败,json不合法,请检查控制台日志或输入的数据.',

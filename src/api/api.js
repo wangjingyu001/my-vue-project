@@ -3,7 +3,9 @@ import axios from "axios";
 // 创建 axios 实例
 const apiClient = axios.create({
     // baseURL: "https://pytools.site/api",
-    baseURL: "http://127.0.0.1:8000",
+    // baseURL: "http://127.0.0.1:8000",
+    baseURL: "https://workspace-wsea2995553f56e4cf-http-8080.ide.byted.org",
+
     timeout: 5000, // 请求超时时间
   headers: {
     "Content-Type": "application/json",
@@ -25,9 +27,9 @@ export const formatJson = (formatStr) => callApi("/format_json/", { format_str: 
 export const formatCurl = (formatStr) => callApi("/format_curl/", { format_str: formatStr });
 export const formatCookies = (formatStr) => callApi("/format_cookies/", { format_str: formatStr });
 export const formatHeaders = (formatStr) => callApi("/format_headers/", { format_str: formatStr });
-export const objectToDict = (formatStr) => callApi("/object_to_dict/", { format_str: formatStr });
+export const objectToDict = (formatStr) => callApi("/object_to_dict", { format_str: formatStr });
 export const stringToJson = (formatStr) => callApi("/string_to_json/", { format_str: formatStr });
 export const stringToObject = (formatStr) => callApi("/string_to_object/", { format_str: formatStr });
-export const compareJson = (json1, json2) => callApi("/compare_json/", { json1, json2 });
+export const compareJson = (json1, json2) => callApi("/compare_json", { json1, json2 });
 
 export default apiClient; // 导出实例用于其他场景
