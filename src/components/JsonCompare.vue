@@ -188,7 +188,7 @@ export default {
                 if (lineNum < 0 || lineNum >= doc.lines) continue;
                 
                 // 获取行范围
-                const line = doc.line(lineNum + 1); // 注意: 行号从1开始
+                const line = doc.line(lineNum ); // 注意: 行号从1开始
                 ranges.push({
                     from: line.from,
                     to: line.to,

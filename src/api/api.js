@@ -4,9 +4,11 @@ import axios from "axios";
 const apiClient = axios.create({
     // baseURL: "https://pytools.site/api",
     // baseURL: "http://127.0.0.1:8000",
-    baseURL: "https://workspace-wsea2995553f56e4cf-http-8080.ide.byted.org",
+    // baseURL: "https://workspace-wsea2995553f56e4cf-http-8080.ide.byted.org",
+    baseURL: "http://124.220.194.48:8080",
+    // baseURL: "https://pytools.site/api",
 
-    timeout: 5000, // 请求超时时间
+    timeout: 50000, // 请求超时时间
   headers: {
     "Content-Type": "application/json",
   }
