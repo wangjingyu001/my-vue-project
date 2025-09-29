@@ -61,7 +61,8 @@
                     <UnicodeDecode />
                 </div>
                 <div v-if="activeMenu === '11'" class="main-content-son">
-                    <Encrypt />
+                    <!-- <Encrypt /> -->
+                    <CyberChefEmbed />
                 </div>
                 <footer class="footer">
                     <a href="https://beian.miit.gov.cn/" target="_blank" class="beian-link">京ICP备2024101520号-1</a>
@@ -88,6 +89,8 @@ import EncodeDecodeUrl from './EncodeDecodeUrl.vue'
 import UnicodeDecode from "./UnicodeDecode.vue";
 import CurlToRequests from "./CurlToRequests.vue";
 // import Encrypt from "./Encrypt.vue";
+import CyberChefEmbed from "./encrypt_test.vue";
+
 
 
 export default {
@@ -102,6 +105,7 @@ export default {
         FormatHtml,
         EncodeDecodeUrl,
         UnicodeDecode,
+        CyberChefEmbed
         // Encrypt
     },
     data() {
