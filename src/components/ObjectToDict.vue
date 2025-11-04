@@ -66,6 +66,11 @@ import { python } from "@codemirror/lang-python";
 const addWidgetEffect = StateEffect.define();
 // 定义清除 widget 的状态效果
 const clearWidgetsEffect = StateEffect.define();
+
+// 定义添加 count 装饰器的状态效果
+const addCountEffect = StateEffect.define();
+
+
 // 定义 widget 装饰器的状态字段
 const widgetDecorations = StateField.define({
     create() {
@@ -91,7 +96,59 @@ const widgetDecorations = StateField.define({
     },
     provide: (f) => EditorView.decorations.from(f),
 });
+// 定义 count 装饰器的状态字段
+const countDecorations = StateField.define({
+    create() {
+        return Decoration.none;
+    },
+    update(decorations, tr) {
+        // 清除所有装饰器
+        for (let effect of tr.effects) {
+            if (effect.is(clearWidgetsEffect)) {
+                return Decoration.none;
+            }
+        }
 
+        // 添加新装饰器
+        for (let effect of tr.effects) {
+            if (effect.is(addCountEffect)) {
+                return effect.value;
+            }
+        }
+
+        // 保持现有装饰器并映射到新状态
+        return decorations.map(tr.changes);
+    },
+    provide: (f) => EditorView.decorations.from(f),
+});
+
+// 创建一个组合装饰器字段，同时处理widget和count装饰器
+const combinedDecorations = StateField.define({
+    create() {
+        return Decoration.none;
+    },
+    update(decorations, tr) {
+        let newDecorations = decorations;
+        
+        // 处理所有效果
+        for (let effect of tr.effects) {
+            if (effect.is(clearWidgetsEffect)) {
+                newDecorations = Decoration.none;
+            } else if (effect.is(addWidgetEffect) || effect.is(addCountEffect)) {
+                // 合并装饰器
+                if (newDecorations === Decoration.none) {
+                    newDecorations = effect.value;
+                } else {
+                    newDecorations = newDecorations.concat(effect.value);
+                }
+            }
+        }
+        
+        // 映射到新状态
+        return newDecorations.map(tr.changes);
+    },
+    provide: (f) => EditorView.decorations.from(f),
+});
 export default {
     name: "object_to_dict",
     components: {
@@ -112,6 +169,7 @@ export default {
             leftFolded: false,
             rightFolded: false,
             lines_yingshe: {},
+            path_yingshe: {},
             lineWrapping: false, // 默认关闭换行
             lineWrappingComp: new Compartment(), // 创建 Compartment 实例
             currentWidgetLine: null, // 跟踪当前显示小部件的行号
@@ -142,7 +200,7 @@ export default {
                 python(),
                 codeFolding(),
                 this.lineWrappingComp.of(this.lineWrapping ? EditorView.lineWrapping : []), // 动态管理换行扩展
-                widgetDecorations, // 添加装饰器状态字段
+                combinedDecorations, // 使用组合装饰器字段
                 EditorView.domEventHandlers({
                     mousedown: (event, view) => {
                         const pos = view.posAtCoords({ x: event.clientX, y: event.clientY });
@@ -225,7 +283,7 @@ export default {
         // 清除所有小部件
         clearWidgets(editor) {
             editor.dispatch({
-                effects: clearWidgetsEffect.of(null)
+effects: clearWidgetsEffect.of(null)
             });
             this.currentWidgetLine = null;
         },
@@ -437,6 +495,7 @@ export default {
                 }
 
                 if (this.response.data.status === 200) {
+                    this.path_yingshe = this.response.data.result.path_yingshe;
                     this.editor_left.dispatch({ changes: { from: 0, to: this.editor_left.state.doc.length, insert: this.response.data.result.object_js } });
                     this.editor_right.dispatch({ changes: { from: 0, to: this.editor_right.state.doc.length, insert: this.response.data.result.dict_py } });
                     this.editor_right.dispatch({
@@ -459,6 +518,9 @@ export default {
 
                     this.lines_yingshe = this.response.data.result.lines_yingshe;
                     this.lines_yingshe_reverse = this.response.data.result.lines_yingshe_reverse;
+                    // 添加count信息装饰器
+                    this.addCountDecorations();
+
                     this.editor_right.requestMeasure()
                     
             
@@ -487,6 +549,133 @@ export default {
             } finally {
             }
         },
+        // 添加count信息装饰器的方法
+        addCountDecorations() {
+            try {
+                const object_js = JSON.parse(this.response.data.result.object_js);
+                const editor = this.editor_right;
+                let decorations = [];
+                
+                console.log('path_yingshe:', this.path_yingshe);
+                console.log('object_js:', object_js);
+                
+                // 首先为最外层对象添加count信息
+                let rootCountText = '';
+                if (Array.isArray(object_js)) {
+                    rootCountText = `${object_js.length} items`;
+                } else if (object_js && typeof object_js === 'object') {
+                    rootCountText = `${Object.keys(object_js).length} keys`;
+                }
+                
+                if (rootCountText) {
+                    console.log(`Adding root count: ${rootCountText}`);
+                    
+                    // 创建count信息span
+                    const countSpan = document.createElement('span');
+                    countSpan.className = 'count-info';
+                    countSpan.textContent = `# ${rootCountText}`;
+                    countSpan.style.marginLeft = '10px';
+                    countSpan.style.color = '#666';
+                    countSpan.style.fontStyle = 'italic';
+                    countSpan.style.fontSize = '12px';
+                    countSpan.style.backgroundColor = '#f5f5f5';
+                    countSpan.style.padding = '2px 6px';
+                    countSpan.style.borderRadius = '3px';
+                    countSpan.style.border = '1px solid #ddd';
+                    
+                    // 创建装饰器
+                    const decoration = Decoration.widget({
+                        widget: new class extends WidgetType {
+                            toDOM() {
+                                return countSpan;
+                            }
+                        }(),
+                        side: 1 // 行尾显示
+                    });
+                    
+                    // 计算第一行的行尾位置
+                    const firstLinePos = editor.state.doc.line(1).to;
+                    decorations.push(decoration.range(firstLinePos));
+                }
+                
+                // 然后为所有内层对象添加count信息
+                for (const [key, value] of Object.entries(this.path_yingshe)) {
+                    const startLine = value[0];
+                    const endLine = value[value.length-1];
+                    
+                    console.log(`Processing path: ${key}, startLine: ${startLine}, endLine: ${endLine}`);
+                    
+                    if (endLine !== startLine) {
+                        let countText = '';
+                        let path_list = JSON.parse(key);
+                        let jsonValue = object_js;
+                        
+                        // 安全地遍历路径
+                        for (let path of path_list) {
+                            if (jsonValue && jsonValue.hasOwnProperty(path)) {
+                                jsonValue = jsonValue[path];
+                            } else {
+                                jsonValue = null;
+                                break;
+                            }
+                        }
+                        
+                        if (Array.isArray(jsonValue)) {
+                            countText = `${jsonValue.length} items`;
+                        } else if (jsonValue && typeof jsonValue === 'object') {
+                            countText = `${Object.keys(jsonValue).length} keys`;
+                        }
+                        
+                        if (countText) {
+                            console.log(`Adding count for line ${endLine}: ${countText}`);
+                            
+                            // 创建count信息span
+                            const countSpan = document.createElement('span');
+                            countSpan.className = 'count-info';
+                            countSpan.textContent = `# ${countText}`;
+                            countSpan.style.marginLeft = '10px';
+                            countSpan.style.color = '#666';
+                            countSpan.style.fontStyle = 'italic';
+                            countSpan.style.fontSize = '12px';
+                            countSpan.style.backgroundColor = '#f5f5f5';
+                            countSpan.style.padding = '2px 6px';
+                            countSpan.style.borderRadius = '3px';
+                            countSpan.style.border = '1px solid #ddd';
+                            
+                            // 创建装饰器
+                            const decoration = Decoration.widget({
+                                widget: new class extends WidgetType {
+                                    toDOM() {
+                                        return countSpan;
+                                    }
+                                }(),
+                                side: 1 // 行尾显示
+                            });
+                            
+                            // 修复：使用endLine而不是startLine
+                            const linePos = editor.state.doc.line(startLine).to;
+                            decorations.push(decoration.range(linePos));
+                        }
+                    }
+                }
+                
+                decorations = decorations.sort((a, b) => a.from - b.from);
+                
+                // 如果有装饰器，添加到编辑器
+                if (decorations.length > 0) {
+                    console.log(`Adding ${decorations.length} count decorations`);
+                    const decorationSet = Decoration.set(decorations);
+                    editor.dispatch({
+                        effects: addCountEffect.of(decorationSet)
+                    });
+                } else {
+                    console.log('No count decorations to add');
+                }
+                
+            } catch (error) {
+                console.error('Error in addCountDecorations:', error);
+            }
+        }
     },
 };
 </script>
