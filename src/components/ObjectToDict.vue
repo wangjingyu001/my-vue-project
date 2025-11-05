@@ -123,32 +123,64 @@ const countDecorations = StateField.define({
 });
 
 // 创建一个组合装饰器字段，同时处理widget和count装饰器
+// 创建一个组合装饰器字段，同时处理widget和count装饰器
 const combinedDecorations = StateField.define({
     create() {
-        return Decoration.none;
+        return { widgets: Decoration.none, counts: Decoration.none };
     },
     update(decorations, tr) {
-        let newDecorations = decorations;
+        let widgets = decorations.widgets;
+        let counts = decorations.counts;
         
         // 处理所有效果
         for (let effect of tr.effects) {
             if (effect.is(clearWidgetsEffect)) {
-                newDecorations = Decoration.none;
-            } else if (effect.is(addWidgetEffect) || effect.is(addCountEffect)) {
-                // 合并装饰器
-                if (newDecorations === Decoration.none) {
-                    newDecorations = effect.value;
-                } else {
-                    newDecorations = newDecorations.concat(effect.value);
-                }
+                // 只清除widget装饰器，保留count装饰器
+                widgets = Decoration.none;
+            } else if (effect.is(addWidgetEffect)) {
+                widgets = effect.value;
+            } else if (effect.is(addCountEffect)) {
+                counts = effect.value;
             }
         }
         
         // 映射到新状态
-        return newDecorations.map(tr.changes);
+        widgets = widgets.map(tr.changes);
+        counts = counts.map(tr.changes);
+        
+        return { widgets, counts };
     },
-    provide: (f) => EditorView.decorations.from(f),
+    provide: (f) => EditorView.decorations.from(f, (value) => {
+        // 合并两种装饰器
+        if (value.widgets === Decoration.none && value.counts === Decoration.none) {
+            return Decoration.none;
+        }
+        if (value.widgets === Decoration.none) {
+            return value.counts;
+        }
+        if (value.counts === Decoration.none) {
+            return value.widgets;
+        }
+        
+        // 合并两个DecorationSet
+        const allDecorations = [];
+        const cursor1 = value.widgets.iter();
+        const cursor2 = value.counts.iter();
+        
+        while (cursor1.value !== null) {
+            allDecorations.push(cursor1.value.range(cursor1.from, cursor1.to));
+            cursor1.next();
+        }
+        
+        while (cursor2.value !== null) {
+            allDecorations.push(cursor2.value.range(cursor2.from, cursor2.to));
+            cursor2.next();
+        }
+        
+        return Decoration.set(allDecorations.sort((a, b) => a.from - b.from));
+    }),
 });
+
 export default {
     name: "object_to_dict",
     components: {
