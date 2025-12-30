@@ -36,3 +36,4 @@ jobs:
         github_token: ${{ secrets.GITHUB_TOKEN }}
         # 核心重点：发布 dist 文件夹，而不是发布源码根目录
         publish_dir: ./dist
+        force_orphan: true
