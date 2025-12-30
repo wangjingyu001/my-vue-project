@@ -24,7 +24,7 @@ export default defineConfig({
     build: {
       
       target: 'esnext', // 支持顶层 await
-      outDir: `C:/Users/Admin/Desktop/spidertools界面/build`, 
+      outDir: `dist`, 
   },
   // esbuild: {
   //   supported: {
