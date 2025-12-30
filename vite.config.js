@@ -6,7 +6,7 @@ import nodeStdLibBrowser from 'vite-plugin-node-stdlib-browser'; // Or import po
 
 // https://vite.dev/config/
 export default defineConfig({
-  // base: '/my-vue-project/',
+  base: '/my-vue-project/',
     define: {
         'process.env': {}, // 模拟空的 process.env
          // 'process.cwd': '"/"',  // 修改为字符串, // 模拟返回根路径
