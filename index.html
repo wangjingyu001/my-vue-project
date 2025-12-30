@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" href="/my-vue-project/assets/logo-b050d9bd.png" type="image/x-icon">
+   
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/javascript/javascript.min.js"></script>
+        <!-- 在 index.html 或 App.vue 的 template 中添加 -->
+    <script src="https://unpkg.com/prettier@3.1.0/standalone.js"></script>
+    <script src="https://unpkg.com/prettier@3.1.0/plugins/babel.js"></script>
+    <style>
+      /* 加载动画样式 */
+      #loading {
+        position: fixed;
+        width: 100%;
+        height: 100%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        background-color: #fff;
+        z-index: 9999;
+      }
+      .spinner {
+        border: 4px solid rgba(0, 0, 0, 0.1);
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        border-left-color: #09f;
+        animation: spin 1s ease infinite;
+      }
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+    </style>
+    <script type="module" crossorigin src="/my-vue-project/assets/index-53c5de75.js"></script>
+    <link rel="stylesheet" href="/my-vue-project/assets/index-e74f793c.css">
+  </head>
+  <body>
+    <noscript>
+        <strong>We're sorry but my-vue-project doesn't work properly without JavaScript enabled. Please enable it to continue.</strong>
+    </noscript>
+    <div id="loading">
+      <div class="spinner"></div>
+    </div>
+    <div id="app">
+      
+    </div>
+    <script>
+        // 模拟 process 对象
+        if (typeof process === 'undefined') {
+          window.process = {
+            cwd: () => '/', // 模拟 process.cwd()
+            env: {},        // 模拟 process.env
+          };
+        }
+      </script>
+    
+  </body>
+  
+  <script>
+  // 针对某些库（如 tree-sitter）在浏览器中寻找 WASM 的特殊全局配置
+  window.TreeSitter = {
+    url: '/my-vue-project/tree-sitter.wasm'
+  };
+
+  // 补丁：拦截 fetch 请求（如果该包使用 fetch 获取 wasm）
+  const originalFetch = window.fetch;
+  window.fetch = function() {
+    if (arguments[0] && typeof arguments[0] === 'string' && arguments[0].endsWith('tree-sitter.wasm')) {
+        if (!arguments[0].includes('/my-vue-project/')) {
+            arguments[0] = '/my-vue-project/tree-sitter.wasm';
+        }
+    }
+    if (arguments[0] && typeof arguments[0] === 'string' && arguments[0].endsWith('tree-sitter-bash.wasm')) {
+        if (!arguments[0].includes('/my-vue-project/')) {
+            arguments[0] = '/my-vue-project/tree-sitter-bash.wasm';
+        }
+    }
+    return originalFetch.apply(this, arguments);
+  };
+</script>
+</html>
