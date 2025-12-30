@@ -6,12 +6,10 @@ import nodeStdLibBrowser from 'vite-plugin-node-stdlib-browser'; // Or import po
 
 // https://vite.dev/config/
 export default defineConfig({
-  base: '/my-vue-project/',
+  // base: '/my-vue-project/',
     define: {
         'process.env': {}, // 模拟空的 process.env
-        'load("/tree-sitter-bash.wasm")': 'load("/my-vue-project/tree-sitter-bash.wasm")',
-    'return "/" + scriptName': 'return "/my-vue-project/" + scriptName'
-        // 'process.cwd': '"/"',  // 修改为字符串, // 模拟返回根路径
+         // 'process.cwd': '"/"',  // 修改为字符串, // 模拟返回根路径
     },
   plugins: [
       topLevelAwait(),
