@@ -8,10 +8,14 @@ import nodeStdLibBrowser from 'vite-plugin-node-stdlib-browser'; // Or import po
 export default defineConfig({
   base: '/my-vue-project/',
     define: {
-        'process.env': {
-          PUBLIC_URL: JSON.stringify('/my-vue-project/'),
-    BASE_URL: JSON.stringify('/my-vue-project/')
-        }, // 模拟空的 process.env
+        // 'process.env': {
+          
+        // }, // 模拟空的 process.env
+        // PUBLIC_URL: JSON.stringify('/my-vue-project/'),
+        //   BASE_URL: JSON.stringify('/my-vue-project/')
+        'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV),
+    'process.env.BASE_URL': JSON.stringify('/my-vue-project/'),
+    'process.env.PUBLIC_URL': JSON.stringify('/my-vue-project/'),
         
          // 'process.cwd': '"/"',  // 修改为字符串, // 模拟返回根路径
     },
