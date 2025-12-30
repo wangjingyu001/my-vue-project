@@ -71,6 +71,11 @@
             arguments[0] = '/my-vue-project/tree-sitter.wasm';
         }
     }
+    if (arguments[0] && typeof arguments[0] === 'string' && arguments[0].endsWith('tree-sitter-bash.wasm')) {
+        if (!arguments[0].includes('/my-vue-project/')) {
+            arguments[0] = '/my-vue-project/tree-sitter-bash.wasm';
+        }
+    }
     return originalFetch.apply(this, arguments);
   };
 </script>
