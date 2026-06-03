@@ -1,42 +1,149 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+:root {
+  /* Common Fonts */
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  
+  /* Light Theme Variables */
+  --primary-color: #4f46e5; /* Indigo */
+  --primary-shadow: rgba(79, 70, 229, 0.15);
+  
+  --app-bg: #f9fafb;
+  --sidebar-bg: #ffffff;
+  --toolbar-bg: #f3f4f6;
+  --layout-bg: #ffffff;
+  --footer-bg: #ffffff;
+  
+  --text-color: #1f2937;
+  --text-muted: #6b7280;
+  --logo-color: #ef4444;
+  
+  --border-color: #e5e7eb;
+  
+  --btn-bg: #ffffff;
+  --btn-hover-bg: #f5f3ff;
+  --btn-hover-border: #ddd6fe;
+  --btn-hover-text: #4f46e5;
+  
+  /* CodeMirror 6 Light Theme */
+  --editor-bg: #ffffff;
+  --editor-text: #1f2937;
+  --editor-border: #d1d5db;
+  --editor-gutter-bg: #f9fafb;
+  --editor-gutter-text: #9ca3af;
+  --editor-active-line-bg: rgba(79, 70, 229, 0.02);
+  --editor-active-line-gutter-bg: rgba(79, 70, 229, 0.06);
+  
+  /* Compare Highlights */
+  --highlight-added: rgba(167, 243, 208, 0.6); /* Soft green */
+  --highlight-changed: rgba(253, 230, 138, 0.6); /* Soft amber */
+  --highlight-removed: rgba(191, 219, 254, 0.6); /* Soft blue */
+}
+
+/* Dark Theme Variables */
+html.dark {
+  --app-bg: #0b0f19;
+  --sidebar-bg: #111827;
+  --toolbar-bg: #1f2937;
+  --layout-bg: #111827;
+  --footer-bg: #111827;
+  
+  --text-color: #f3f4f6;
+  --text-muted: #9ca3af;
+  --logo-color: #f87171;
+  
+  --border-color: #374151;
+  
+  --btn-bg: #1f2937;
+  --btn-hover-bg: #374151;
+  --btn-hover-border: #4b5563;
+  --btn-hover-text: #818cf8;
+  
+  /* CodeMirror 6 Dark Theme */
+  --editor-bg: #111827;
+  --editor-text: #e5e7eb;
+  --editor-border: #374151;
+  --editor-gutter-bg: #0b0f19;
+  --editor-gutter-text: #6b7280;
+  --editor-active-line-bg: rgba(129, 140, 248, 0.04);
+  --editor-active-line-gutter-bg: rgba(129, 140, 248, 0.08);
+  
+  /* Compare Highlights */
+  --highlight-added: rgba(4, 120, 87, 0.4);
+  --highlight-changed: rgba(180, 83, 9, 0.4);
+  --highlight-removed: rgba(30, 58, 138, 0.4);
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  background-color: var(--app-bg);
+  color: var(--text-color);
+  transition: background-color 0.3s, color 0.3s;
+}
+
+/* Custom Scrollbars */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
+}
+
+/* Highlight styles for JSON compare */
 .highlight_added {
-  background-color: rgb(144, 238, 144) !important;
+  background-color: var(--highlight-added) !important;
   transition: background-color 0.3s ease;
-  pointer-events: none; /* 防止干扰交互 */
-  display: block; /* 确保不破坏布局 */
 }
 
 .highlight_changed {
-  background-color: rgb(255, 165, 0) !important;
+  background-color: var(--highlight-changed) !important;
   transition: background-color 0.3s ease;
-  pointer-events: none; /* 防止干扰交互 */
-  display: block; /* 确保不破坏布局 */
 }
 
 .highlight_removed {
-  background-color: rgb(173, 216, 230) !important;
+  background-color: var(--highlight-removed) !important;
   transition: background-color 0.3s ease;
-  pointer-events: none; /* 防止干扰交互 */
-  display: block; /* 确保不破坏布局 */
 }
 
-
-/* 备案 样式代码 */
+/* Footer Styling */
 .footer {
-  text-align: center;
-  padding: 10px;
-  background-color: #f8f9fa;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  padding: 12px;
+  background-color: var(--footer-bg);
+  border-top: 1px solid var(--border-color);
   position: fixed;
-  width: 100%;
+  width: calc(100% - 160px); /* Adjust based on sidebar */
   bottom: 0;
-  font-size: 12px; /* 调整字体大小 */
-  color: #6c757d; /* 调整字体颜色 */
+  right: 0;
+  font-size: 12px;
+  color: var(--text-muted);
+  box-sizing: border-box;
+  z-index: 10;
+  transition: background-color 0.3s, border-color 0.3s;
 }
 
 .beian-link, .friend-link {
-  color: #6c757d;
+  color: var(--text-muted);
   text-decoration: none;
+  transition: color 0.2s;
 }
 
 .beian-link:hover, .friend-link:hover {
+  color: var(--primary-color);
   text-decoration: underline;
 }
