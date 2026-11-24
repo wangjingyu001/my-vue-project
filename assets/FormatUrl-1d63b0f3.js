@@ -1,0 +1,9 @@
+import{_ as c,b as u,C as g,E as t,d as p,p as l,e as h,r as d,o as m,h as f}from"./index-43347b94.js";const _={name:"format_url",components:{DualEditorLayout:u},data(){return{lineWrapping:!1,lineWrappingComp:new g}},mounted(){this._debounceTimer=null,this.editor_left=new t({extensions:[p,l(),h(),t.updateListener.of(e=>{e.docChanged&&(clearTimeout(this._debounceTimer),this._debounceTimer=setTimeout(()=>this.formaturl(),100))}),this.lineWrappingComp.of(this.lineWrapping?t.lineWrapping:[])],parent:this.$refs.layout.getLeftContainer()}),this.editor_right=new t({extensions:[p,l(),h(),this.lineWrappingComp.of(this.lineWrapping?t.lineWrapping:[])],parent:this.$refs.layout.getRightContainer()}),this.$refs.layout.registerEditors(this.editor_left,this.editor_right)},beforeUnmount(){clearTimeout(this._debounceTimer)},methods:{handleLineWrappingChange(e){this.lineWrapping=e,this.editor_left.dispatch({effects:this.lineWrappingComp.reconfigure(e?t.lineWrapping:[])}),this.editor_right.dispatch({effects:this.lineWrappingComp.reconfigure(e?t.lineWrapping:[])})},formaturl(){const e=this.editor_left.state.doc.toString();try{const r=new URL(e.trim()),s=r.origin,a=r.pathname,n=s+a,i=Object.fromEntries(r.searchParams),o=`url = "${n}"
+params = ${JSON.stringify(i,null,4)}
+
+from urllib.parse import urlparse, parse_qs, urlencode, urljoin
+base_url = "${n}"
+params = ${JSON.stringify(i,null,4)}
+query_string = urlencode(params)
+full_url = urljoin(base_url, '?' + query_string)
+`;this.editor_right.dispatch({changes:{from:0,to:this.editor_right.state.doc.length,insert:o}})}catch(r){console.error("请求失败:",r),this.editor_right.dispatch({changes:{from:0,to:this.editor_right.state.doc.length,insert:"解析失败，请输入合法的 URL 字符串"}})}}}};function W(e,r,s,a,n,i){const o=d("DualEditorLayout");return m(),f(o,{ref:"layout",onLineWrappingChange:i.handleLineWrappingChange},null,8,["onLineWrappingChange"])}const y=c(_,[["render",W]]);export{y as default};

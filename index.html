@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>爬虫工具库 - PyTools</title>
+    <link rel="icon" href="/assets/logo-fc16d0a8.png" type="image/png">
+    <script>
+      // 提前同步亮暗色主题，避免首屏白屏闪烁
+      (function () {
+        try {
+          var saved = localStorage.getItem('theme');
+          if (saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark');
+          }
+        } catch (e) {}
+      })();
+
+      // 模拟 process 对象与全局兼容
+      if (typeof process === 'undefined') {
+        window.process = {
+          cwd: () => '/',
+          env: {},
+        };
+      }
+
+      // 针对 tree-sitter 在浏览器中寻找 WASM 的全局路径自适应
+      const basePrefix = window.location.pathname.startsWith('/my-vue-project') ? '/my-vue-project/' : '/';
+      window.TreeSitter = {
+        url: basePrefix + 'tree-sitter.wasm'
+      };
+
+      const originalFetch = window.fetch;
+      window.fetch = function () {
+        if (arguments[0] && typeof arguments[0] === 'string') {
+          if (arguments[0].endsWith('tree-sitter.wasm') && !arguments[0].includes(basePrefix)) {
+            arguments[0] = basePrefix + 'tree-sitter.wasm';
+          } else if (arguments[0].endsWith('tree-sitter-bash.wasm') && !arguments[0].includes(basePrefix)) {
+            arguments[0] = basePrefix + 'tree-sitter-bash.wasm';
+          }
+        }
+        return originalFetch.apply(this, arguments);
+      };
+    </script>
+    <style>
+      #loading {
+        position: fixed;
+        inset: 0;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        background-color: #f9fafb;
+        z-index: 9999;
+      }
+      html.dark #loading {
+        background-color: #0b0f19;
+      }
+      .spinner {
+        border: 3px solid rgba(79, 70, 229, 0.15);
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        border-left-color: #4f46e5;
+        animation: spin 0.75s linear infinite;
+      }
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+    </style>
+    <script type="module" crossorigin src="/assets/index-43347b94.js"></script>
+    <link rel="stylesheet" href="/assets/index-fc27619a.css">
+  </head>
+  <body>
+    <noscript>
+      <strong>请启用 JavaScript 以正常使用爬虫工具库。</strong>
+    </noscript>
+    <div id="loading">
+      <div class="spinner"></div>
+    </div>
+    <div id="app"></div>
+    
+  </body>
+</html>
