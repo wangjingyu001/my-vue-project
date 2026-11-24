@@ -5,12 +5,17 @@ import App from './App.vue'
 import ElementPlus from 'element-plus';
 import 'element-plus/dist/index.css';
 
-
-// 在应用代码运行前模拟 process.cwd()
-
-const app = createApp(App);
-app.use(ElementPlus); // 使用 Element-Plus
-app.mount('#app');
-
-// 移除加载动画
-document.getElementById('loading').style.display = 'none';
+console.log('[App] Initializing Vue app...');
+try {
+  const app = createApp(App);
+  app.use(ElementPlus);
+  app.mount('#app');
+  console.log('[App] Mounted successfully!');
+} catch (err) {
+  console.error('[App] Mount error:', err);
+} finally {
+  const loading = document.getElementById('loading');
+  if (loading) {
+    loading.style.display = 'none';
+  }
+}

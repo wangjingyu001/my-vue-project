@@ -5,38 +5,28 @@ import topLevelAwait from 'vite-plugin-top-level-await'
 import nodeStdLibBrowser from 'vite-plugin-node-stdlib-browser'; // Or import polyfills from 'vite-plugin-node-polyfills';
 
 // https://vite.dev/config/
+const base = process.env.VITE_BASE || '/';
+
 export default defineConfig({
-  base: '/my-vue-project/',
-    define: {
-        // 'process.env': {
-          
-        // }, // 模拟空的 process.env
-        // PUBLIC_URL: JSON.stringify('/my-vue-project/'),
-        //   BASE_URL: JSON.stringify('/my-vue-project/')
-        'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV),
-    'process.env.BASE_URL': JSON.stringify('/my-vue-project/'),
-    'process.env.PUBLIC_URL': JSON.stringify('/my-vue-project/'),
-        
-         // 'process.cwd': '"/"',  // 修改为字符串, // 模拟返回根路径
-    },
+  base: base,
+  define: {
+    'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV),
+    'process.env.BASE_URL': JSON.stringify(base),
+    'process.env.PUBLIC_URL': JSON.stringify(base),
+  },
   plugins: [
-      topLevelAwait(),
-      nodeStdLibBrowser(),
-    vue()],
+    topLevelAwait(),
+    nodeStdLibBrowser(),
+    vue()
+  ],
   resolve: {
     alias: {
-          "@": path.resolve(__dirname, "src"), // 确保 @ 映射到 src 目录
-        // 'process': 'process/browser'
+      "@": path.resolve(__dirname, "src"),
     },
   },
-    build: {
-      
-      target: 'esnext', // 支持顶层 await
-      outDir: `dist`, 
+  build: {
+    target: 'esnext',
+    outDir: `dist`,
+    chunkSizeWarningLimit: 6000,
   },
-  // esbuild: {
-  //   supported: {
-  //     'top-level-await': true //browsers can handle top-level-await features
-  //   },
-  // },
 })

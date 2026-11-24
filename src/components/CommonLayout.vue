@@ -64,17 +64,19 @@
 </template>
 
 <script>
+import { defineAsyncComponent } from 'vue';
 import { Sunny, Moon } from '@element-plus/icons-vue';
-import JsonCompare from "./JsonCompare.vue";
 import ObjectToDict from './ObjectToDict.vue';
-import CurlToSpiderverse from "./CurlToSpiderverse.vue";
+import JsonCompare from "./JsonCompare.vue";
 import FormatJs from "./FormatJs.vue";
 import FormatHtml from './FormatHtml.vue';
 import FormatUrl from "./FormatUrl.vue";
 import EncodeDecodeUrl from './EncodeDecodeUrl.vue';
 import UnicodeDecode from "./UnicodeDecode.vue";
-import CurlToRequests from "./CurlToRequests.vue";
-import CyberChefEmbed from "./encrypt_test.vue";
+
+const CurlToSpiderverse = defineAsyncComponent(() => import("./CurlToSpiderverse.vue"));
+const CurlToRequests = defineAsyncComponent(() => import("./CurlToRequests.vue"));
+const CyberChefEmbed = defineAsyncComponent(() => import("./encrypt_test.vue"));
 
 export default {
     components: {

@@ -34,6 +34,34 @@
         100% { transform: rotate(360deg); }
       }
     </style>
+    <script>
+      // 模拟 process 对象与全局 Buffer 兼容
+      if (typeof process === 'undefined') {
+        window.process = {
+          cwd: () => '/',
+          env: {},
+        };
+      }
+      // 针对某些库（如 tree-sitter）在浏览器中寻找 WASM 的特殊全局配置
+      const basePrefix = window.location.pathname.startsWith('/my-vue-project') ? '/my-vue-project/' : '/';
+      window.TreeSitter = {
+        url: basePrefix + 'tree-sitter.wasm'
+      };
+
+      // 补丁：拦截 fetch 请求（保证 wasm 文件路径在独立域名和 GitHub Pages 下均正确加载）
+      const originalFetch = window.fetch;
+      window.fetch = function() {
+        if (arguments[0] && typeof arguments[0] === 'string') {
+          if (arguments[0].endsWith('tree-sitter.wasm') && !arguments[0].includes(basePrefix)) {
+            arguments[0] = basePrefix + 'tree-sitter.wasm';
+          } else if (arguments[0].endsWith('tree-sitter-bash.wasm') && !arguments[0].includes(basePrefix)) {
+            arguments[0] = basePrefix + 'tree-sitter-bash.wasm';
+          }
+        }
+        return originalFetch.apply(this, arguments);
+      };
+    </script>
+    <link rel="stylesheet" href="/src/style.css">
   </head>
   <body>
     <noscript>
@@ -42,41 +70,7 @@
     <div id="loading">
       <div class="spinner"></div>
     </div>
-    <div id="app">
-      
-    </div>
-    <script>
-        // 模拟 process 对象
-        if (typeof process === 'undefined') {
-          window.process = {
-            cwd: () => '/', // 模拟 process.cwd()
-            env: {},        // 模拟 process.env
-          };
-        }
-      </script>
+    <div id="app"></div>
     <script type="module" src="/src/main.js"></script>
   </body>
-  <link rel="stylesheet" href="/src/style.css">
-  <script>
-  // 针对某些库（如 tree-sitter）在浏览器中寻找 WASM 的特殊全局配置
-  window.TreeSitter = {
-    url: '/my-vue-project/tree-sitter.wasm'
-  };
-
-  // 补丁：拦截 fetch 请求（如果该包使用 fetch 获取 wasm）
-  const originalFetch = window.fetch;
-  window.fetch = function() {
-    if (arguments[0] && typeof arguments[0] === 'string' && arguments[0].endsWith('tree-sitter.wasm')) {
-        if (!arguments[0].includes('/my-vue-project/')) {
-            arguments[0] = '/my-vue-project/tree-sitter.wasm';
-        }
-    }
-    if (arguments[0] && typeof arguments[0] === 'string' && arguments[0].endsWith('tree-sitter-bash.wasm')) {
-        if (!arguments[0].includes('/my-vue-project/')) {
-            arguments[0] = '/my-vue-project/tree-sitter-bash.wasm';
-        }
-    }
-    return originalFetch.apply(this, arguments);
-  };
-</script>
 </html>
