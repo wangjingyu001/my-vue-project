@@ -4,15 +4,15 @@
             <!-- 侧边栏 -->
             <el-aside class="menu-aside">
                 <div class="logo">
-                    <img src="../assets/logo.png" alt="Logo" class="logo-img" />
+                    <img src="../assets/logo.png" alt="Logo" class="logo-img" width="32" height="32" />
                     <span class="logo-text">爬虫工具库</span>
                 </div>
                 
                 <el-menu default-active="1" class="el-menu-vertical" @select="handleMenuClick">
                     <el-menu-item class="menu-item" index="1">object转dict(格式化)</el-menu-item>
                     <el-menu-item class="menu-item" index="2">JSON对比</el-menu-item>
-                    <el-menu-item class="menu-item" index="3">cURL转Function</el-menu-item>
-                    <el-menu-item class="menu-item" index="4">cURL转request py</el-menu-item>
+                    <el-menu-item class="menu-item" index="3" @mouseenter="preloadCurl">cURL转Function</el-menu-item>
+                    <el-menu-item class="menu-item" index="4" @mouseenter="preloadCurl">cURL转request py</el-menu-item>
                     <el-menu-item class="menu-item" index="6">URL参数提取</el-menu-item>
                     <el-menu-item class="menu-item" index="7">JS格式化</el-menu-item>
                     <el-menu-item class="menu-item" index="8">HTML格式化</el-menu-item>
@@ -38,20 +38,14 @@
 
             <!-- 内容区 -->
             <el-main class="main-content">
-                <transition name="fade-transform" mode="out-in">
-                    <div :key="activeMenu" class="main-content-son">
-                        <ObjectToDict v-if="activeMenu === '1'" />
-                        <JsonCompare v-else-if="activeMenu === '2'" />
-                        <CurlToSpiderverse v-else-if="activeMenu === '3'" />
-                        <CurlToRequests v-else-if="activeMenu === '4'" />
-                        <FormatUrl v-else-if="activeMenu === '6'" />
-                        <FormatJs v-else-if="activeMenu === '7'" />
-                        <FormatHtml v-else-if="activeMenu === '8'" />
-                        <EncodeDecodeUrl v-else-if="activeMenu === '9'" />
-                        <UnicodeDecode v-else-if="activeMenu === '10'" />
-                        <CyberChefEmbed v-else-if="activeMenu === '11'" />
-                    </div>
-                </transition>
+                <div class="main-content-son" v-show="activeMenu !== '11'">
+                    <keep-alive>
+                        <component :is="currentEditorComponent" />
+                    </keep-alive>
+                </div>
+                <div class="main-content-son" v-if="cyberChefLoaded" v-show="activeMenu === '11'">
+                    <CyberChefEmbed />
+                </div>
                 
                 <footer class="footer">
                     <a href="https://beian.miit.gov.cn/" target="_blank" class="beian-link">京ICP备2024101520号-1</a>
@@ -67,26 +61,48 @@
 import { defineAsyncComponent } from 'vue';
 import { Sunny, Moon } from '@element-plus/icons-vue';
 import ObjectToDict from './ObjectToDict.vue';
-import JsonCompare from "./JsonCompare.vue";
-import FormatJs from "./FormatJs.vue";
-import FormatHtml from './FormatHtml.vue';
-import FormatUrl from "./FormatUrl.vue";
-import EncodeDecodeUrl from './EncodeDecodeUrl.vue';
-import UnicodeDecode from "./UnicodeDecode.vue";
 
-const CurlToSpiderverse = defineAsyncComponent(() => import("./CurlToSpiderverse.vue"));
-const CurlToRequests = defineAsyncComponent(() => import("./CurlToRequests.vue"));
-const CyberChefEmbed = defineAsyncComponent(() => import("./encrypt_test.vue"));
+const loadJsonCompare = () => import('./JsonCompare.vue');
+const loadFormatUrl = () => import('./FormatUrl.vue');
+const loadFormatJs = () => import('./FormatJs.vue');
+const loadFormatHtml = () => import('./FormatHtml.vue');
+const loadEncodeDecodeUrl = () => import('./EncodeDecodeUrl.vue');
+const loadUnicodeDecode = () => import('./UnicodeDecode.vue');
+const loadCurlToSpiderverse = () => import('./CurlToSpiderverse.vue');
+const loadCurlToRequests = () => import('./CurlToRequests.vue');
+const loadCyberChef = () => import('./encrypt_test.vue');
+
+const JsonCompare = defineAsyncComponent(loadJsonCompare);
+const FormatUrl = defineAsyncComponent(loadFormatUrl);
+const FormatJs = defineAsyncComponent(loadFormatJs);
+const FormatHtml = defineAsyncComponent(loadFormatHtml);
+const EncodeDecodeUrl = defineAsyncComponent(loadEncodeDecodeUrl);
+const UnicodeDecode = defineAsyncComponent(loadUnicodeDecode);
+const CurlToSpiderverse = defineAsyncComponent(loadCurlToSpiderverse);
+const CurlToRequests = defineAsyncComponent(loadCurlToRequests);
+const CyberChefEmbed = defineAsyncComponent(loadCyberChef);
+
+const MENU_COMPONENT_MAP = {
+    '1': 'ObjectToDict',
+    '2': 'JsonCompare',
+    '3': 'CurlToSpiderverse',
+    '4': 'CurlToRequests',
+    '6': 'FormatUrl',
+    '7': 'FormatJs',
+    '8': 'FormatHtml',
+    '9': 'EncodeDecodeUrl',
+    '10': 'UnicodeDecode'
+};
 
 export default {
     components: {
         Sunny,
         Moon,
+        ObjectToDict,
         JsonCompare,
         CurlToRequests,
         CurlToSpiderverse,
         FormatUrl,
-        ObjectToDict,
         FormatJs,
         FormatHtml,
         EncodeDecodeUrl,
@@ -95,12 +111,18 @@ export default {
     },
     data() {
         return {
-            activeMenu: "1",
-            isDark: false
+            activeMenu: '1',
+            isDark: false,
+            cyberChefLoaded: false,
+            curlPreloaded: false
         };
     },
+    computed: {
+        currentEditorComponent() {
+            return MENU_COMPONENT_MAP[this.activeMenu] || 'ObjectToDict';
+        }
+    },
     mounted() {
-        // 初始化主题
         const savedTheme = localStorage.getItem('theme');
         if (savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
             this.isDark = true;
@@ -109,10 +131,34 @@ export default {
             this.isDark = false;
             document.documentElement.classList.remove('dark');
         }
+
+        // 首屏渲染完毕后，利用浏览器空闲时间静默预热常用轻量组件
+        const warmup = () => {
+            loadJsonCompare();
+            loadFormatUrl();
+            loadEncodeDecodeUrl();
+            loadUnicodeDecode();
+            loadFormatJs();
+            loadFormatHtml();
+        };
+        if ('requestIdleCallback' in window) {
+            window.requestIdleCallback(warmup, { timeout: 2000 });
+        } else {
+            setTimeout(warmup, 800);
+        }
     },
     methods: {
         handleMenuClick(index) {
+            if (index === '11') {
+                this.cyberChefLoaded = true;
+            }
             this.activeMenu = index;
+        },
+        preloadCurl() {
+            if (this.curlPreloaded) return;
+            this.curlPreloaded = true;
+            loadCurlToSpiderverse();
+            loadCurlToRequests();
         },
         toggleTheme() {
             this.isDark = !this.isDark;
@@ -150,7 +196,7 @@ export default {
     display: flex;
     flex-direction: column;
     flex-shrink: 0;
-    transition: background-color 0.3s, border-color 0.3s;
+    transition: background-color 0.2s, border-color 0.2s;
 }
 
 .logo {
@@ -190,7 +236,7 @@ export default {
     color: var(--text-color) !important;
     margin: 4px 8px;
     border-radius: 6px;
-    transition: all 0.25s ease !important;
+    transition: background-color 0.15s ease, color 0.15s ease !important;
 }
 
 .menu-item:hover {
@@ -241,27 +287,11 @@ export default {
     background-color: var(--layout-bg);
     overflow: hidden;
     position: relative;
-    transition: background-color 0.3s;
+    transition: background-color 0.2s;
 }
 
 .main-content-son {
-    height: calc(100vh - 40px); /* Account for footer */
+    height: calc(100vh - 40px);
     width: 100%;
-}
-
-/* 切换动画 */
-.fade-transform-enter-active,
-.fade-transform-leave-active {
-    transition: all 0.3s ease;
-}
-
-.fade-transform-enter-from {
-    opacity: 0;
-    transform: translateX(-10px);
-}
-
-.fade-transform-leave-to {
-    opacity: 0;
-    transform: translateX(10px);
 }
 </style>

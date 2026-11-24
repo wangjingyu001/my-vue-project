@@ -1,8 +1,6 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
-
 :root {
-  /* Common Fonts */
-  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  /* Common Fonts - Local-first fast font stack */
+  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang SC', 'Microsoft YaHei', sans-serif;
   
   /* Light Theme Variables */
   --primary-color: #4f46e5; /* Indigo */

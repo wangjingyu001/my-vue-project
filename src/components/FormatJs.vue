@@ -4,8 +4,8 @@
         @line-wrapping-change="handleLineWrappingChange"
     >
         <template #actions>
-            <el-button @click="compression_js" size="small" class="toolbar-btn">压缩JS</el-button>
-            <el-button @click="format_js" size="small" class="toolbar-btn">格式化JS</el-button>
+            <el-button :loading="isCompressing" @click="compression_js" size="small" class="toolbar-btn">压缩JS</el-button>
+            <el-button :loading="isFormatting" @click="format_js" size="small" class="toolbar-btn">格式化JS</el-button>
         </template>
     </DualEditorLayout>
 </template>
@@ -15,8 +15,6 @@ import { Compartment } from "@codemirror/state";
 import { EditorView, basicSetup } from "codemirror";
 import { codeFolding } from "@codemirror/language";
 import { javascript } from "@codemirror/lang-javascript";
-import beautify from "js-beautify";
-import { minify } from 'terser';
 import DualEditorLayout from "./DualEditorLayout.vue";
 
 export default {
@@ -27,11 +25,12 @@ export default {
     data() {
         return {
             lineWrapping: false,
+            isCompressing: false,
+            isFormatting: false,
             lineWrappingComp: new Compartment()
         };
     },
     mounted() {
-        // 初始化 CodeMirror
         this.editor_left = new EditorView({
             extensions: [
                 basicSetup,
@@ -65,21 +64,28 @@ export default {
             });
         },
         async compression_js() {
+            this.isCompressing = true;
             try {
+                const { minify } = await import('terser');
                 const response = await minify(this.editor_left.state.doc.toString());
                 this.editor_right.dispatch({ 
-                    changes: { from: 0, to: this.editor_right.state.doc.length, insert: response.code } 
+                    changes: { from: 0, to: this.editor_right.state.doc.length, insert: response.code || '' } 
                 });
             } catch (error) {
                 console.error("请求失败:", error);
                 this.editor_right.dispatch({ 
                     changes: { from: 0, to: this.editor_right.state.doc.length, insert: "压缩失败，请检查输入的 JS 语法是否正确" } 
                 });
+            } finally {
+                this.isCompressing = false;
             }
         },
-        format_js() {
+        async format_js() {
+            this.isFormatting = true;
             const format_str = this.editor_left.state.doc.toString();
             try {
+                const mod = await import("js-beautify");
+                const beautify = mod.default || mod;
                 const response = beautify.js(format_str, {
                     indent_size: 4,
                     space_in_empty_paren: true
@@ -92,6 +98,8 @@ export default {
                 this.editor_right.dispatch({ 
                     changes: { from: 0, to: this.editor_right.state.doc.length, insert: "格式化失败，请检查输入的 JS 语法" } 
                 });
+            } finally {
+                this.isFormatting = false;
             }
         }
     }

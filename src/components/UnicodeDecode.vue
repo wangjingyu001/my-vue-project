@@ -27,13 +27,14 @@ export default {
         };
     },
     mounted() {
-        // 初始化 CodeMirror
+        this._debounceTimer = null;
         this.editor_left = new EditorView({
             extensions: [
                 basicSetup,
                 EditorView.updateListener.of((update) => {
                     if (update.docChanged) {
-                        this.unicode_decode();
+                        clearTimeout(this._debounceTimer);
+                        this._debounceTimer = setTimeout(() => this.unicode_decode(), 100);
                     }
                 }),
                 this.lineWrappingComp.of(this.lineWrapping ? EditorView.lineWrapping : [])
@@ -50,6 +51,9 @@ export default {
         });
 
         this.$refs.layout.registerEditors(this.editor_left, this.editor_right);
+    },
+    beforeUnmount() {
+        clearTimeout(this._debounceTimer);
     },
     methods: {
         handleLineWrappingChange(val) {

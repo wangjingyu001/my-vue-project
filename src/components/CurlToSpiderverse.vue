@@ -11,7 +11,6 @@ import { EditorView, basicSetup } from "codemirror";
 import { codeFolding } from "@codemirror/language";
 import { python } from "@codemirror/lang-python";
 import * as curlconverter from 'curlconverter';
-import { forIn } from "lodash";
 import DualEditorLayout from "./DualEditorLayout.vue";
 
 export default {
@@ -26,7 +25,7 @@ export default {
         };
     },
     mounted() {
-        // 初始化 CodeMirror
+        this._debounceTimer = null;
         this.editor_left = new EditorView({
             extensions: [
                 basicSetup,
@@ -34,7 +33,8 @@ export default {
                 codeFolding(),
                 EditorView.updateListener.of((update) => {
                     if (update.docChanged) {
-                        this.formatcurl();
+                        clearTimeout(this._debounceTimer);
+                        this._debounceTimer = setTimeout(() => this.formatcurl(), 120);
                     }
                 }),
                 this.lineWrappingComp.of(this.lineWrapping ? EditorView.lineWrapping : [])
@@ -54,6 +54,9 @@ export default {
 
         this.$refs.layout.registerEditors(this.editor_left, this.editor_right);
     },
+    beforeUnmount() {
+        clearTimeout(this._debounceTimer);
+    },
     methods: {
         handleLineWrappingChange(val) {
             this.lineWrapping = val;
@@ -66,19 +69,18 @@ export default {
         },
         deal_headers_cookie(headers, indent) {
             return JSON.stringify(headers, (key, value) => {
-                if (key === 'cookie') return; // 移除 cookie
+                if (key === 'cookie') return;
                 return value;
             }, indent);
         },
         addSpacesToLastLine(str) {
             const lines = str.split('\n');
-            forIn(lines, (value, index) => {
-                if (index === 0 && lines[index] === '{') {
-                    // Do nothing for first line if it's brace
-                } else {
-                    lines[index] = '    ' + lines[index];
+            for (let i = 0; i < lines.length; i++) {
+                if (i === 0 && lines[i] === '{') {
+                    continue;
                 }
-            });
+                lines[i] = '    ' + lines[i];
+            }
             return lines.join('\n');
         },
         trans_object_to_dict(data, indent) {
@@ -109,13 +111,11 @@ export default {
                     if (data) {
                         data = JSON.parse(data);
                     } 
-                } catch (error) {
-                    console.log("不是json格式的数据")
-                }
+                } catch (error) {}
                 const cookies = json_curl.cookies || {};
 
-                let data_temp, data_str, data_python;
-                data_python = this.addSpacesToLastLine(this.trans_object_to_dict(data, 4));
+                let data_temp, data_str;
+                const data_python = this.addSpacesToLastLine(this.trans_object_to_dict(data, 4));
 
                 if (method === "post") {
                     if (headers['content-type'] && headers['content-type'].indexOf('application/json') !== -1) {
@@ -156,6 +156,12 @@ ${data_temp}
         },
         formatcurl() {
             const format_str = this.editor_left.state.doc.toString();
+            if (!format_str.trim()) {
+                this.editor_right.dispatch({
+                    changes: { from: 0, to: this.editor_right.state.doc.length, insert: '' }
+                });
+                return;
+            }
             try {
                 const response = this.build_requests_code(format_str);
                 this.editor_right.dispatch({ 

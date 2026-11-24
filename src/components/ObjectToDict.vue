@@ -306,14 +306,6 @@ export default {
                     this.editor_right.dispatch({ 
                         changes: { from: 0, to: this.editor_right.state.doc.length, insert: this.response.data.result.dict_py } 
                     });
-                    this.editor_right.dispatch({
-                        effects: EditorView.scrollIntoView(this.editor_right.state.doc.length)
-                    });
-                    this.editor_left.dispatch({
-                        effects: EditorView.scrollIntoView(this.editor_left.state.doc.length)
-                    });
-                    await new Promise(r => setTimeout(r, 200));
-                    
                     this.editor_right.dispatch({ effects: EditorView.scrollIntoView(0) });
                     this.editor_left.dispatch({ effects: EditorView.scrollIntoView(0) });
 
