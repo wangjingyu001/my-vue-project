@@ -9,7 +9,7 @@ import nodeStdLibBrowser from 'vite-plugin-node-stdlib-browser';
 const base = process.env.VITE_BASE || '/';
 
 function precompressGzipPlugin() {
-  const compressibleExts = new Set(['.js', '.css', '.html', '.wasm', '.svg', '.json', '.fnt']);
+  const compressibleExts = new Set(['.js', '.css', '.html', '.wasm', '.svg', '.json', '.fnt', '.ttf', '.otf', '.ico']);
   function walkAndCompress(dir) {
     if (!fs.existsSync(dir)) return;
     for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {

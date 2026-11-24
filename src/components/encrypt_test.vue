@@ -1,6 +1,7 @@
 <template>
   <div class="cyberchef-container">
     <iframe
+      ref="cyberchefIframe"
       :src="cyberchefUrl"
       class="cyberchef-iframe"
       frameborder="0"
@@ -8,7 +9,10 @@
       @load="onIframeLoad"
       @error="onIframeError"
     ></iframe>
-    <div v-if="loading" class="loading">加载 CyberChef 中...</div>
+    <div v-if="loading" class="loading-overlay">
+      <div class="loading-spinner"></div>
+      <span>正在初始化 CyberChef 加解密引擎...</span>
+    </div>
     <div v-if="error" class="error">
       加载失败: {{ error }}
       <button @click="retry" class="retry-btn">重试</button>
@@ -19,39 +23,68 @@
 <script>
 export default {
   name: 'CyberChefPage',
+  props: {
+    isDark: {
+      type: Boolean,
+      default: false
+    }
+  },
   data() {
     return {
       cyberchefUrl: '',
       loading: true,
       error: null
+    };
+  },
+  watch: {
+    isDark(val) {
+      this.syncThemeToCyberChef(val);
     }
   },
   mounted() {
+    this.syncThemeToStorage(this.isDark);
     this.setCyberChefUrl();
   },
   methods: {
+    syncThemeToStorage(isDark) {
+      try {
+        const raw = localStorage.getItem('options');
+        const opts = raw ? JSON.parse(raw) : {};
+        opts.theme = isDark ? 'dark' : 'classic';
+        localStorage.setItem('options', JSON.stringify(opts));
+      } catch (e) {}
+    },
+    syncThemeToCyberChef(isDark) {
+      this.syncThemeToStorage(isDark);
+      try {
+        const doc = this.$refs.cyberchefIframe?.contentDocument;
+        if (doc && doc.documentElement) {
+          doc.documentElement.className = isDark ? 'dark' : 'classic';
+        }
+      } catch (e) {}
+    },
     setCyberChefUrl() {
-      // 使用本地 CyberChef 文件
       this.cyberchefUrl = './cyberchef/CyberChef_v10.19.4.html';
-      console.log('CyberChef URL:', this.cyberchefUrl);
     },
     onIframeLoad() {
       this.loading = false;
       this.error = null;
-      console.log('CyberChef loaded successfully');
+      this.syncThemeToCyberChef(this.isDark);
     },
     onIframeError() {
       this.loading = false;
       this.error = '无法加载本地 CyberChef 文件';
-      console.error('Failed to load CyberChef');
     },
     retry() {
       this.loading = true;
       this.error = null;
-      this.setCyberChefUrl();
+      this.cyberchefUrl = '';
+      this.$nextTick(() => {
+        this.setCyberChefUrl();
+      });
     }
   }
-}
+};
 </script>
 
 <style scoped>
@@ -70,7 +103,36 @@ export default {
   display: block;
 }
 
-.loading, .error {
+.loading-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  background-color: var(--layout-bg, #ffffff);
+  font-size: 13px;
+  color: var(--text-muted, #6b7280);
+  z-index: 5;
+}
+
+.loading-spinner {
+  width: 28px;
+  height: 28px;
+  border: 3px solid rgba(79, 70, 229, 0.15);
+  border-left-color: var(--primary-color, #4f46e5);
+  border-radius: 50%;
+  animation: cc-spin 0.75s linear infinite;
+}
+
+@keyframes cc-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.error {
   position: absolute;
   top: 50%;
   left: 50%;
@@ -78,18 +140,14 @@ export default {
   text-align: center;
   padding: 20px;
   font-size: 14px;
-  color: var(--text-color, #1f2937);
-  z-index: 5;
-}
-
-.error {
   color: #e74c3c;
+  z-index: 6;
 }
 
 .retry-btn {
   margin-top: 10px;
   padding: 8px 16px;
-  background: var(--primary-color, #3498db);
+  background: var(--primary-color, #4f46e5);
   color: white;
   border: none;
   border-radius: 4px;
@@ -97,10 +155,5 @@ export default {
   display: block;
   margin-left: auto;
   margin-right: auto;
-  transition: opacity 0.2s;
-}
-
-.retry-btn:hover {
-  opacity: 0.9;
 }
 </style>

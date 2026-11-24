@@ -18,7 +18,7 @@
                     <el-menu-item class="menu-item" index="8">HTML格式化</el-menu-item>
                     <el-menu-item class="menu-item" index="9">URL编码/解码</el-menu-item>
                     <el-menu-item class="menu-item" index="10">unicode编码/解码</el-menu-item>
-                    <el-menu-item class="menu-item" index="11">加解密</el-menu-item>
+                    <el-menu-item class="menu-item" index="11" @mouseenter="preloadCyberChef">加解密</el-menu-item>
                 </el-menu>
 
                 <!-- 主题切换器 -->
@@ -43,8 +43,11 @@
                         <component :is="currentEditorComponent" />
                     </keep-alive>
                 </div>
-                <div class="main-content-son" v-if="cyberChefLoaded" v-show="activeMenu === '11'">
-                    <CyberChefEmbed />
+                <div
+                    v-if="cyberChefLoaded"
+                    :class="['main-content-son', 'cyberchef-keepalive-pane', { 'is-hidden': activeMenu !== '11' }]"
+                >
+                    <CyberChefEmbed :is-dark="isDark" />
                 </div>
                 
                 <footer class="footer">
@@ -146,6 +149,21 @@ export default {
         } else {
             setTimeout(warmup, 800);
         }
+
+        // 首屏及轻量组件就绪后（约 2.5s 空闲时），在后台隐藏状态静默预挂载 CyberChef，实现点击 0ms 瞬开
+        const conn = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+        if (!conn || !conn.saveData) {
+            this._cyberChefIdleTimer = setTimeout(() => {
+                if ('requestIdleCallback' in window) {
+                    window.requestIdleCallback(() => this.preloadCyberChef(), { timeout: 3000 });
+                } else {
+                    this.preloadCyberChef();
+                }
+            }, 2500);
+        }
+    },
+    beforeUnmount() {
+        clearTimeout(this._cyberChefIdleTimer);
     },
     methods: {
         handleMenuClick(index) {
@@ -153,6 +171,10 @@ export default {
                 this.cyberChefLoaded = true;
             }
             this.activeMenu = index;
+        },
+        preloadCyberChef() {
+            if (this.cyberChefLoaded) return;
+            this.cyberChefLoaded = true;
         },
         preloadCurl() {
             if (this.curlPreloaded) return;
@@ -293,5 +315,15 @@ export default {
 .main-content-son {
     height: calc(100vh - 40px);
     width: 100%;
+}
+
+.cyberchef-keepalive-pane.is-hidden {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    visibility: hidden;
+    pointer-events: none;
+    z-index: -1;
 }
 </style>
